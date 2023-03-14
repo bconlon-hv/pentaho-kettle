@@ -2,7 +2,7 @@
  *
  * Pentaho Data Integration
  *
- * Copyright (C) 2002-2020 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2002-2023 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -112,7 +112,8 @@ import java.util.Set;
 @PluginDialog(
     id = "MetaInject",
     image = "org/pentaho/di/ui/trans/steps/metainject/img/GenericTransform.svg",
-    pluginType = PluginDialog.PluginType.STEP
+    pluginType = PluginDialog.PluginType.STEP,
+    documentationUrl = "Products/ETL_metadata_injection"
 )
 public class MetaInjectDialog extends BaseStepDialog implements StepDialogInterface {
 
