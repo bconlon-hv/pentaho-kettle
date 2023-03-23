@@ -367,8 +367,13 @@ public class TextFileInputUtils {
 
             if ( encodingType.isReturn( c ) || encodingType.isLinefeed( c ) ) {
               c = reader.read(); // skip \n and \r
+              //TODO is this correct? seems like this code assumes the line endings can be either CRLF or LFCR
+              // but it looks like valid windows line endings are always CRLF.
+              // And why are we throwing this at all?
+
+              // TODO And why aren't we using the same 'look ahead' logic from the mixed option here?
               if ( !encodingType.isReturn( c ) && !encodingType.isLinefeed( c ) ) {
-                // make sure its really a linefeed or cariage return
+                // make sure it's really a linefeed or carriage return
                 // raise an error this is not a DOS file
                 // so we have pulled a character from the next line
                 throw new KettleFileException( BaseMessages.getString( PKG, "TextFileInput.Log.SingleLineFound" ) );
@@ -384,6 +389,8 @@ public class TextFileInputUtils {
           while ( c >= 0 ) {
             c = reader.read();
 
+            // TODO is this right? I though unix line endings were a single linefeed
+            // Judging by some of the unit tests, this was an attempt to handle Mac OS X and Unix together
             if ( encodingType.isLinefeed( c ) || encodingType.isReturn( c ) ) {
               return line.toString();
             }

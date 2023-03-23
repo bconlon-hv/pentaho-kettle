@@ -63,6 +63,9 @@ import org.pentaho.di.trans.steps.textfileinput.TextFileInput;
 import org.pentaho.di.trans.steps.textfileinput.TextFileInputField;
 import org.pentaho.di.trans.steps.textfileinput.TextFileInputMeta;
 
+//TODO ^ should those all be switched to reference the non-deprecated version of the text file input stage?
+// looks like lots of other classes do still reference them.  when is that deprecated step going to be removed entirely?
+
 /**
  * Read a simple CSV file Just output Strings found in the file...
  *
@@ -778,6 +781,8 @@ public class CsvInput extends BaseStep implements StepInterface {
           }
 
           switch ( meta.getFileFormatTypeNr() ) {
+            //TODO this is referencing the deprecated version of the text input stage...
+            //TODO and why is there no handling for unix?
             case TextFileInputMeta.FILE_FORMAT_DOS:
               if ( data.newLineFound() ) {
                 if ( doubleLineEnd == true ) {

@@ -507,6 +507,7 @@ public class CsvInputDialog extends BaseStepDialog implements StepDialogInterfac
     wFormat.add( "DOS" );
     wFormat.add( "Unix" );
     wFormat.add( "mixed" );
+    //TODO add new option here
     wFormat.select( 2 );
     wFormat.addModifyListener( lsMod );
     FormData fdFormat = new FormData();

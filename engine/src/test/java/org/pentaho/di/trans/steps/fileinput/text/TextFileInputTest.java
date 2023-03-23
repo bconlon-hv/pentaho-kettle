@@ -84,6 +84,7 @@ public class TextFileInputTest {
       new InputStreamReader( new ByteArrayInputStream( data.getBytes( ( "UTF-8" ) ) ) ) );
   }
 
+  //TODO these "getline" tests should really be checking more than one line
   @Test
   public void testGetLineDOS() throws KettleFileException, UnsupportedEncodingException {
     String input = "col1\tcol2\tcol3\r\ndata1\tdata2\tdata3\r\n";
@@ -106,7 +107,7 @@ public class TextFileInputTest {
 
   @Test
   public void testGetLineOSX() throws KettleFileException, UnsupportedEncodingException {
-    String input = "col1\tcol2\tcol3\rdata1\tdata2\tdata3\r";
+    String input = "col1\tcol2\tcol3\ndata1\tdata2\tdata3\n";
     String expected = "col1\tcol2\tcol3";
     String output =
         TextFileInputUtils.getLine( null, getInputStreamReader( input ), TextFileInputMeta.FILE_FORMAT_UNIX,
@@ -114,6 +115,7 @@ public class TextFileInputTest {
     assertEquals( expected, output );
   }
 
+  //TODO need more mixed unit tests - more combinations of characters
   @Test
   public void testGetLineMixed() throws KettleFileException, UnsupportedEncodingException {
     String input = "col1\tcol2\tcol3\r\ndata1\tdata2\tdata3\r";

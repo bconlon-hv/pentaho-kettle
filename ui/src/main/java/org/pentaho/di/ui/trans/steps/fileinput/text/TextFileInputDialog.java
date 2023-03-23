@@ -1397,6 +1397,7 @@ public class TextFileInputDialog extends BaseStepDialog implements StepDialogInt
     wFormat.add( "DOS" );
     wFormat.add( "Unix" );
     wFormat.add( "mixed" );
+    //TODO - here's where to add a new option in the UI
     wFormat.select( 0 );
     wFormat.addModifyListener( lsMod );
     fdFormat = new FormData();

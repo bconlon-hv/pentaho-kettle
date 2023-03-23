@@ -83,11 +83,9 @@ public class TextFileInputMeta extends BaseFileInputMeta<BaseFileInputAdditional
                                                          // for base
 
   private static final String STRING_BASE64_PREFIX = "Base64: ";
-
   public static final int FILE_FORMAT_DOS = 0;
   public static final int FILE_FORMAT_UNIX = 1;
   public static final int FILE_FORMAT_MIXED = 2;
-
   public static final int FILE_TYPE_CSV = 0;
   public static final int FILE_TYPE_FIXED = 1;
 
@@ -180,6 +178,7 @@ public class TextFileInputMeta extends BaseFileInputMeta<BaseFileInputAdditional
     @Injection( name = "ROW_NUMBER_BY_FILE" )
     public boolean rowNumberByFile;
 
+    //TODO or mac?
     /** The file format: DOS or UNIX or mixed */
     @Injection( name = "FILE_FORMAT" )
     public String fileFormat;
@@ -1205,6 +1204,8 @@ public class TextFileInputMeta extends BaseFileInputMeta<BaseFileInputAdditional
 
   public int getFileFormatTypeNr() {
     // calculate the file format type in advance so we can use a switch
+
+    //TODO update this
     if ( content.fileFormat.equalsIgnoreCase( "DOS" ) ) {
       return FILE_FORMAT_DOS;
     } else if ( content.fileFormat.equalsIgnoreCase( "unix" ) ) {
