@@ -8081,8 +8081,25 @@ public class Spoon extends ApplicationWindow implements AddUndoPositionInterface
    *
    */
   public void createDatabaseWizard() {
-    delegates.db.createDatabaseWizard( );
-    refreshGraph();
+    AbstractMeta meta = getActiveTransformationOrJob();
+    // TODO BACKLOG-41332
+    if ( meta == null ) {
+      return; // nowhere to put the new database
+    }
+
+    CreateDatabaseWizard cdw = new CreateDatabaseWizard();
+    DatabaseMeta newDBInfo = cdw.createAndRunDatabaseWizard( shell, props, meta.getDatabases() );
+    if ( newDBInfo != null ) { // finished
+      try {
+        DatabaseManagementInterface dbMgr =
+                Spoon.getInstance().getBowl().getManager( DatabaseManagementInterface.class );
+        dbMgr.addDatabase( newDBInfo );
+      } catch ( KettleException e ) {
+        new ErrorDialog( shell, "Error creating Database Connection", "Unable to create connection", e );
+      }
+      refreshTree( DBConnectionFolderProvider.STRING_CONNECTIONS );
+      refreshGraph();
+    }
   }
 
   public List<DatabaseMeta> getActiveDatabases() {
