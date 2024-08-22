@@ -98,13 +98,12 @@ public class BaseStepDialog_ConnectionLine_Test {
 
     Supplier<Spoon> mockSupplier = mock( Supplier.class );
     Spoon mockSpoon = mock( Spoon.class );
-    DefaultBowl mockDefaultBowl = mock( DefaultBowl.class );
 
     Whitebox.setInternalState( dialog, "spoonSupplier", mockSupplier );
     when( mockSupplier.get() ).thenReturn( mockSpoon );
-    DatabaseConnectionManager mockDbManager = mock( DatabaseConnectionManager.class );
     doReturn( DefaultBowl.getInstance() ).when( mockSpoon ).getBowl();
-    when( mockDefaultBowl.getManager( DatabaseManagementInterface.class ) ).thenReturn( mockDbManager );
+    DatabaseManagementInterface dbMgr =  DefaultBowl.getInstance().getManager( DatabaseManagementInterface.class );
+    when( mockSpoon.getBowl().getManager( DatabaseManagementInterface.class ));
 
     dialog.transMeta = transMeta;
     dialog.new AddConnectionListener( mock( CCombo.class ) ).widgetSelected( null );
@@ -147,7 +146,7 @@ public class BaseStepDialog_ConnectionLine_Test {
   @Test
   public void edits_WhenNewNameIsUnique() throws Exception {
     TransMeta transMeta = new TransMeta();
-    transMeta.getDatabaseManagementInterface().addDatabase( createDefaultDatabase() );
+    DefaultBowl.getInstance().getManager( DatabaseManagementInterface.class ).addDatabase( createDefaultDatabase() );
 
     invokeEditConnectionListener( transMeta, INPUT_NAME );
 
@@ -278,6 +277,8 @@ public class BaseStepDialog_ConnectionLine_Test {
     transMeta.getDatabaseManagementInterface().addDatabase( db2 );
 
     final String expectedResult = INPUT_NAME + "2";
+
+
 
     DatabaseDialog databaseDialog = mock( DatabaseDialog.class );
     when( databaseDialog.open() )
