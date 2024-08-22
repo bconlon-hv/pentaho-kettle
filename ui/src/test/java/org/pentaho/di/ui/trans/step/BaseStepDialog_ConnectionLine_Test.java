@@ -96,6 +96,7 @@ public class BaseStepDialog_ConnectionLine_Test {
     Spoon mockSpoon = mock( Spoon.class );
     Whitebox.setInternalState( dialog, "spoonSupplier", mockSupplier );
     when( mockSupplier.get() ).thenReturn( mockSpoon );
+    when( mockSpoon.getBowl() ).thenReturn( DefaultBowl.getInstance() );
     dialog.transMeta = transMeta;
     dialog.new AddConnectionListener( mock( CCombo.class ) ).widgetSelected( null );
     if ( answeredName != null ) {
@@ -138,6 +139,12 @@ public class BaseStepDialog_ConnectionLine_Test {
     BaseStepDialog dialog = mock( BaseStepDialog.class );
     when( dialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta() ) )
       .thenAnswer( new PropsSettingAnswer( answeredName, INPUT_HOST ) );
+
+    Supplier<Spoon> mockSupplier = mock( Supplier.class );
+    Spoon mockSpoon = mock( Spoon.class );
+    Whitebox.setInternalState( dialog, "spoonSupplier", mockSupplier );
+    when( mockSupplier.get() ).thenReturn( mockSpoon );
+    when( mockSpoon.getBowl() ).thenReturn( DefaultBowl.getInstance() );
 
     CCombo combo = mock( CCombo.class );
     when( combo.getText() ).thenReturn( INITIAL_NAME );

@@ -95,6 +95,7 @@ public class JobEntryDialog_ConnectionLine_Test {
     Spoon mockSpoon = mock( Spoon.class );
     Whitebox.setInternalState( dialog, "spoonSupplier", mockSupplier );
     when( mockSupplier.get() ).thenReturn( mockSpoon );
+    when( mockSpoon.getBowl() ).thenReturn( DefaultBowl.getInstance() );
     dialog.jobMeta = jobMeta;
     dialog.new AddConnectionListener( mock( CCombo.class ) ).widgetSelected( null );
     if ( answeredName != null ) {
@@ -137,6 +138,12 @@ public class JobEntryDialog_ConnectionLine_Test {
     JobEntryDialog dialog = mock( JobEntryDialog.class );
     when( dialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta() ) )
       .thenAnswer( new PropsSettingAnswer( answeredName, INPUT_HOST ) );
+
+    Supplier<Spoon> mockSupplier = mock( Supplier.class );
+    Spoon mockSpoon = mock( Spoon.class );
+    Whitebox.setInternalState( dialog, "spoonSupplier", mockSupplier );
+    when( mockSupplier.get() ).thenReturn( mockSpoon );
+    when( mockSpoon.getBowl() ).thenReturn( DefaultBowl.getInstance() );
 
     CCombo combo = mock( CCombo.class );
     when( combo.getText() ).thenReturn( INITIAL_NAME );
