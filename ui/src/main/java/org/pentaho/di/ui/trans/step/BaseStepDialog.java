@@ -847,7 +847,17 @@ public class BaseStepDialog extends Dialog {
           // OK was pressed and input is valid
           repeat = false;
         } else {
-          showDbExistsDialog( changing );
+          try {
+            DatabaseManagementInterface dbMgr =
+              spoonSupplier.get().getBowl().getManager( DatabaseManagementInterface.class );
+            if ( dbMgr.getDatabases().stream().anyMatch( db -> db.getName().equals( changing.getName() ) )) {
+              showDbExistsDialog( changing );
+            } else {
+              repeat = false;
+            }
+          } catch ( KettleException e ) {
+            //TODO idk, do something
+          }
         }
       }
     }

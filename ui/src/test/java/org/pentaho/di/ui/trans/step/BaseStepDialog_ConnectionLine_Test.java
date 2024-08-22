@@ -26,11 +26,14 @@ import org.pentaho.di.core.bowl.DefaultBowl;
 import org.pentaho.di.core.KettleEnvironment;
 import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.junit.rules.RestorePDIEngineEnvironment;
+import org.pentaho.di.shared.DatabaseConnectionManager;
+import org.pentaho.di.shared.DatabaseManagementInterface;
 import org.pentaho.di.shared.MemorySharedObjectsIO;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.ui.core.database.dialog.DatabaseDialog;
 import org.pentaho.di.ui.spoon.Spoon;
 
+import java.util.List;
 import java.util.function.Supplier;
 import org.eclipse.swt.custom.CCombo;
 import org.eclipse.swt.widgets.Shell;
@@ -44,6 +47,7 @@ import org.powermock.reflect.Whitebox;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
@@ -90,13 +94,18 @@ public class BaseStepDialog_ConnectionLine_Test {
   private void invokeAddConnectionListener( TransMeta transMeta, String answeredName ) throws Exception {
     BaseStepDialog dialog = mock( BaseStepDialog.class );
     when( dialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), any() ) )
-      .thenAnswer( new PropsSettingAnswer( answeredName, INPUT_HOST ) );
+      .thenAnswer( new PropsSettingAnswer( answeredName, "TODO" ) );
 
     Supplier<Spoon> mockSupplier = mock( Supplier.class );
     Spoon mockSpoon = mock( Spoon.class );
+    DefaultBowl mockDefaultBowl = mock( DefaultBowl.class );
+
     Whitebox.setInternalState( dialog, "spoonSupplier", mockSupplier );
     when( mockSupplier.get() ).thenReturn( mockSpoon );
-    when( mockSpoon.getBowl() ).thenReturn( DefaultBowl.getInstance() );
+    DatabaseConnectionManager mockDbManager = mock( DatabaseConnectionManager.class );
+    doReturn( DefaultBowl.getInstance() ).when( mockSpoon ).getBowl();
+    when( mockDefaultBowl.getManager( DatabaseManagementInterface.class ) ).thenReturn( mockDbManager );
+
     dialog.transMeta = transMeta;
     dialog.new AddConnectionListener( mock( CCombo.class ) ).widgetSelected( null );
     if ( answeredName != null ) {
@@ -104,9 +113,29 @@ public class BaseStepDialog_ConnectionLine_Test {
     }
   }
 
+  @Test
+  public void edits_globalConnectionWhenNotRenamed() throws Exception {
+    //TODO
+    TransMeta transMeta = new TransMeta();
+    transMeta.getDatabaseManagementInterface().addDatabase( createDefaultDatabase() );
+
+    DatabaseManagementInterface dbMgr =  DefaultBowl.getInstance().getManager( DatabaseManagementInterface.class );
+
+    List<DatabaseMeta> bowlDbs = dbMgr.getDatabases();
+    List<DatabaseMeta> transDbs = transMeta.getDatabases();
+
+    invokeAddConnectionListener( transMeta, INITIAL_NAME );
+    List<DatabaseMeta> bowlDbs2 = dbMgr.getDatabases();
+    List<DatabaseMeta> transDbs2 = transMeta.getDatabases();
+    assertEquals( 2, transMeta.getDatabases().size() );
+//    assertEquals( name, transMeta.getDatabase( 0 ).getName() );
+//    assertEquals( host, transMeta.getDatabase( 0 ).getHostname() );
+
+    invokeEditConnectionListener( transMeta, INITIAL_NAME );
+  }
 
   @Test
-  public void edits_WhenNotRenamed() throws Exception {
+  public void edits_localConnectionWhenNotRenamed() throws Exception {
     TransMeta transMeta = new TransMeta();
     transMeta.getDatabaseManagementInterface().addDatabase( createDefaultDatabase() );
 

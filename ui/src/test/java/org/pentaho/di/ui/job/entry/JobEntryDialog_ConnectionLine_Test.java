@@ -103,6 +103,10 @@ public class JobEntryDialog_ConnectionLine_Test {
     }
   }
 
+  @Test
+  public void edits_globalConnection() throws Exception {
+    //TODO
+  }
 
   @Test
   public void edits_WhenNotRenamed() throws Exception {

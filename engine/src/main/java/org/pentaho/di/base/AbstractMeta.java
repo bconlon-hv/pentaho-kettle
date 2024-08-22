@@ -515,7 +515,7 @@ public abstract class AbstractMeta implements ChangedFlagInterface, UndoInterfac
   public abstract List<String> getUsedVariables();
 
   /**
-   * Find a database connection by it's name
+   * Find a database connection by its name
    *
    * @param name The database name to look for
    * @return The database connection or null if nothing was found.
