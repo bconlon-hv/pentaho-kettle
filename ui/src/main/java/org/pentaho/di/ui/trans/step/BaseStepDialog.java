@@ -1554,10 +1554,8 @@ public class BaseStepDialog extends Dialog {
         if ( connectionName != null ) {
           // These changes won't update shared.xml
           try {
-            DatabaseManagementInterface dbMgr =
-                    spoonSupplier.get().getBowl().getManager( DatabaseManagementInterface.class );
-            dbMgr.removeDatabase( databaseMeta );
-            dbMgr.addDatabase( clone );
+            transMeta.getDatabaseManagementInterface().removeDatabase( databaseMeta );
+            transMeta.getDatabaseManagementInterface().addDatabase( clone );
           } catch ( KettleException ex ) {
             new ErrorDialog( wConnection.getShell(),
               BaseMessages.getString( PKG, "BaseStepDialog.UnexpectedErrorEditingConnection.DialogTitle" ),

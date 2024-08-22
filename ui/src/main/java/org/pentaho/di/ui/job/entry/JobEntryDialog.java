@@ -409,10 +409,8 @@ public class JobEntryDialog extends Dialog {
         if ( connectionName != null ) {
           // need to replace the old connection with a new one
           try {
-            DatabaseManagementInterface dbMgr =
-                    spoonSupplier.get().getBowl().getManager( DatabaseManagementInterface.class );
-            dbMgr.removeDatabase( databaseMeta );
-            dbMgr.addDatabase( clone );
+            jobMeta.getDatabaseManagementInterface().removeDatabase( databaseMeta );
+            jobMeta.getDatabaseManagementInterface().addDatabase( clone );
           } catch ( KettleException exception ) {
             new ErrorDialog( spoonSupplier.get().getShell(),
               BaseMessages.getString( PKG, "Spoon.Dialog.ErrorSavingConnection.Title" ),
