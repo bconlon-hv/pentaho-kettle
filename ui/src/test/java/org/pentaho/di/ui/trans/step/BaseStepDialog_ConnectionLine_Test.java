@@ -22,6 +22,7 @@
 
 package org.pentaho.di.ui.trans.step;
 
+import org.junit.Before;
 import org.pentaho.di.core.bowl.DefaultBowl;
 import org.pentaho.di.core.KettleEnvironment;
 import org.pentaho.di.core.database.DatabaseMeta;
@@ -66,10 +67,24 @@ public class BaseStepDialog_ConnectionLine_Test {
   private static String INITIAL_HOST = "1.2.3.4";
   private static String INPUT_HOST = "5.6.7.8";
 
+  private static  BaseStepDialog dialog;
+
   @BeforeClass
   public static void initKettle() throws Exception {
     KettleEnvironment.init();
     DefaultBowl.getInstance().setSharedObjectsIO( new MemorySharedObjectsIO() );
+  }
+
+  @Before
+  public void setup() {
+    Supplier<Spoon> mockSupplier = mock( Supplier.class );
+    Spoon mockSpoon = mock( Spoon.class );
+    dialog = mock( BaseStepDialog.class );
+
+    //TODO move all this mocking to a common setup method since lots more things need it now
+    Whitebox.setInternalState( dialog, "spoonSupplier", mockSupplier );
+    when( mockSupplier.get() ).thenReturn( mockSpoon );
+    doReturn( DefaultBowl.getInstance() ).when( mockSpoon ).getBowl();
   }
 
   @Test
@@ -92,18 +107,8 @@ public class BaseStepDialog_ConnectionLine_Test {
   }
 
   private void invokeAddConnectionListener( TransMeta transMeta, String answeredName ) throws Exception {
-    BaseStepDialog dialog = mock( BaseStepDialog.class );
     when( dialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), any() ) )
       .thenAnswer( new PropsSettingAnswer( answeredName, "TODO" ) );
-
-    Supplier<Spoon> mockSupplier = mock( Supplier.class );
-    Spoon mockSpoon = mock( Spoon.class );
-
-    Whitebox.setInternalState( dialog, "spoonSupplier", mockSupplier );
-    when( mockSupplier.get() ).thenReturn( mockSpoon );
-    doReturn( DefaultBowl.getInstance() ).when( mockSpoon ).getBowl();
-    DatabaseManagementInterface dbMgr =  DefaultBowl.getInstance().getManager( DatabaseManagementInterface.class );
-    when( mockSpoon.getBowl().getManager( DatabaseManagementInterface.class ));
 
     dialog.transMeta = transMeta;
     dialog.new AddConnectionListener( mock( CCombo.class ) ).widgetSelected( null );
@@ -167,12 +172,6 @@ public class BaseStepDialog_ConnectionLine_Test {
     BaseStepDialog dialog = mock( BaseStepDialog.class );
     when( dialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta() ) )
       .thenAnswer( new PropsSettingAnswer( answeredName, INPUT_HOST ) );
-
-    Supplier<Spoon> mockSupplier = mock( Supplier.class );
-    Spoon mockSpoon = mock( Spoon.class );
-    Whitebox.setInternalState( dialog, "spoonSupplier", mockSupplier );
-    when( mockSupplier.get() ).thenReturn( mockSpoon );
-    when( mockSpoon.getBowl() ).thenReturn( DefaultBowl.getInstance() );
 
     CCombo combo = mock( CCombo.class );
     when( combo.getText() ).thenReturn( INITIAL_NAME );
@@ -277,8 +276,6 @@ public class BaseStepDialog_ConnectionLine_Test {
     transMeta.getDatabaseManagementInterface().addDatabase( db2 );
 
     final String expectedResult = INPUT_NAME + "2";
-
-
 
     DatabaseDialog databaseDialog = mock( DatabaseDialog.class );
     when( databaseDialog.open() )
