@@ -35,6 +35,7 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.pentaho.di.core.bowl.DefaultBowl;
 import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.logging.LoggingObjectInterface;
@@ -56,6 +57,7 @@ import org.pentaho.di.ui.spoon.tree.provider.DBConnectionFolderProvider;
 import org.pentaho.di.ui.util.DialogUtils;
 import org.pentaho.metastore.api.IMetaStore;
 
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 /**
@@ -409,8 +411,20 @@ public class JobEntryDialog extends Dialog {
         if ( connectionName != null ) {
           // need to replace the old connection with a new one
           try {
-            jobMeta.getDatabaseManagementInterface().removeDatabase( databaseMeta );
-            jobMeta.getDatabaseManagementInterface().addDatabase( clone );
+            DatabaseManagementInterface dbMgr =
+              spoonSupplier.get().getBowl().getManager( DatabaseManagementInterface.class );
+            DatabaseManagementInterface globalDbMgr =
+              DefaultBowl.getInstance().getManager( DatabaseManagementInterface.class );
+            if ( dbMgr.getDatabase( connectionName ) != null ) {
+              dbMgr.removeDatabase( databaseMeta );
+              dbMgr.addDatabase( clone );
+            } else if ( globalDbMgr.getDatabase( connectionName ) != null ) {
+              globalDbMgr.removeDatabase( databaseMeta );
+              dbMgr.addDatabase( databaseMeta );
+            } else if ( Arrays.stream( jobMeta.getDatabaseNames() ).anyMatch( connectionName::equals ) ) {
+              jobMeta.getDatabaseManagementInterface().removeDatabase( databaseMeta );
+              jobMeta.getDatabaseManagementInterface().addDatabase( clone );
+            }
           } catch ( KettleException exception ) {
             new ErrorDialog( spoonSupplier.get().getShell(),
               BaseMessages.getString( PKG, "Spoon.Dialog.ErrorSavingConnection.Title" ),

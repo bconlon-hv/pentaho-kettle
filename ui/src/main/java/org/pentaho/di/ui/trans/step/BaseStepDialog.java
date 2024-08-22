@@ -50,6 +50,7 @@ import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.SourceToTargetMapping;
+import org.pentaho.di.core.bowl.DefaultBowl;
 import org.pentaho.di.core.database.DatabaseInterface;
 import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.exception.KettleException;
@@ -93,6 +94,7 @@ import org.pentaho.di.ui.util.HelpUtils;
 import org.pentaho.metastore.api.IMetaStore;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -1554,8 +1556,20 @@ public class BaseStepDialog extends Dialog {
         if ( connectionName != null ) {
           // These changes won't update shared.xml
           try {
-            transMeta.getDatabaseManagementInterface().removeDatabase( databaseMeta );
-            transMeta.getDatabaseManagementInterface().addDatabase( clone );
+            DatabaseManagementInterface dbMgr =
+              spoonSupplier.get().getBowl().getManager( DatabaseManagementInterface.class );
+            DatabaseManagementInterface globalDbMgr =
+              DefaultBowl.getInstance().getManager( DatabaseManagementInterface.class );
+            if ( dbMgr.getDatabase( connectionName ) != null ) {
+              dbMgr.removeDatabase( databaseMeta );
+              dbMgr.addDatabase( clone );
+            } else if ( globalDbMgr.getDatabase( connectionName ) != null ) {
+              globalDbMgr.removeDatabase( databaseMeta );
+              dbMgr.addDatabase( databaseMeta );
+            } else if ( Arrays.stream( transMeta.getDatabaseNames() ).anyMatch( connectionName::equals ) ) {
+              transMeta.getDatabaseManagementInterface().removeDatabase( databaseMeta );
+              transMeta.getDatabaseManagementInterface().addDatabase( clone );
+            }
           } catch ( KettleException ex ) {
             new ErrorDialog( wConnection.getShell(),
               BaseMessages.getString( PKG, "BaseStepDialog.UnexpectedErrorEditingConnection.DialogTitle" ),
