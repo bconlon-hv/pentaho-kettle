@@ -850,13 +850,15 @@ public class BaseStepDialog extends Dialog {
           try {
             DatabaseManagementInterface dbMgr =
               spoonSupplier.get().getBowl().getManager( DatabaseManagementInterface.class );
-            if ( dbMgr.getDatabases().stream().anyMatch( db -> db.getName().equals( changing.getName() ) )) {
+            if ( dbMgr.getDatabases().stream().anyMatch( db -> db.getName().equals( changing.getName() ) ) ) {
               showDbExistsDialog( changing );
             } else {
               repeat = false;
             }
           } catch ( KettleException e ) {
-            //TODO idk, do something
+            new ErrorDialog( shell,
+              BaseMessages.getString( PKG, "BaseStepDialog.UnexpectedErrorEditingConnection.DialogTitle" ),
+              BaseMessages.getString( PKG, "BaseStepDialog.UnexpectedErrorEditingConnection.DialogMessage" ), e );
           }
         }
       }
