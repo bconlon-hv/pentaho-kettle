@@ -1572,15 +1572,31 @@ public class BaseStepDialog extends Dialog {
               spoonSupplier.get().getBowl().getManager( DatabaseManagementInterface.class );
             DatabaseManagementInterface globalDbMgr =
               DefaultBowl.getInstance().getManager( DatabaseManagementInterface.class );
-            if ( dbMgr.getDatabase( connectionName ) != null ) {
-              dbMgr.removeDatabase( databaseMeta );
-              dbMgr.addDatabase( clone );
-            } else if ( globalDbMgr.getDatabase( connectionName ) != null ) {
-              globalDbMgr.removeDatabase( databaseMeta );
-              dbMgr.addDatabase( databaseMeta );
-            } else if ( Arrays.stream( transMeta.getDatabaseNames() ).anyMatch( connectionName::equals ) ) {
-              transMeta.getDatabaseManagementInterface().removeDatabase( databaseMeta );
-              transMeta.getDatabaseManagementInterface().addDatabase( clone );
+            if ( connectionName.equals( databaseMeta.getName() ) ) {
+              // editing without rename
+              if ( dbMgr.getDatabase( connectionName ) != null ) {
+                dbMgr.removeDatabase( databaseMeta );
+                dbMgr.addDatabase( clone );
+              } else if ( globalDbMgr.getDatabase( connectionName ) != null ) {
+                globalDbMgr.removeDatabase( databaseMeta );
+                dbMgr.addDatabase( clone );
+              } else if ( Arrays.stream( transMeta.getDatabaseNames() ).anyMatch( connectionName::equals ) ) {
+                transMeta.getDatabaseManagementInterface().removeDatabase( databaseMeta );
+                transMeta.getDatabaseManagementInterface().addDatabase( clone );
+              }
+            } else {
+              // editing with rename
+              String originalName = databaseMeta.getName();
+              if ( dbMgr.getDatabase( originalName ) != null ) {
+                dbMgr.removeDatabase( databaseMeta );
+                dbMgr.addDatabase( clone );
+              } else if ( globalDbMgr.getDatabase( originalName ) != null ) {
+                globalDbMgr.removeDatabase( databaseMeta );
+                dbMgr.addDatabase( clone );
+              } else if ( Arrays.stream( transMeta.getDatabaseNames() ).anyMatch( originalName::equals ) ) {
+                transMeta.getDatabaseManagementInterface().removeDatabase( databaseMeta );
+                transMeta.getDatabaseManagementInterface().addDatabase( clone );
+              }
             }
           } catch ( KettleException ex ) {
             new ErrorDialog( wConnection.getShell(),
@@ -1588,6 +1604,7 @@ public class BaseStepDialog extends Dialog {
               BaseMessages.getString( PKG, "BaseStepDialog.UnexpectedErrorEditingConnection.DialogMessage" ), ex );
           }
           reinitConnectionDropDown( wConnection, connectionName );
+          spoonSupplier.get().refreshTree( DBConnectionFolderProvider.STRING_CONNECTIONS );
         }
       }
     }

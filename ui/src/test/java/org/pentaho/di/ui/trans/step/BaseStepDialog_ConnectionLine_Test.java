@@ -22,7 +22,6 @@
 
 package org.pentaho.di.ui.trans.step;
 
-import org.junit.After;
 import org.pentaho.di.core.bowl.DefaultBowl;
 import org.pentaho.di.core.KettleEnvironment;
 import org.pentaho.di.core.database.DatabaseMeta;
@@ -34,9 +33,10 @@ import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.ui.core.database.dialog.DatabaseDialog;
 import org.pentaho.di.ui.spoon.Spoon;
 
-import java.util.List;
 import java.util.function.Supplier;
+
 import org.eclipse.swt.custom.CCombo;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -67,7 +67,7 @@ public class BaseStepDialog_ConnectionLine_Test {
   private static final String INITIAL_HOST = "1.2.3.4";
   private static final String INPUT_HOST = "5.6.7.8";
 
-  private static  BaseStepDialog mockDialog;
+  private static BaseStepDialog mockDialog;
   private static Supplier<Spoon> mockSupplier;
   private static Spoon mockSpoon;
   private static DatabaseManagementInterface dbMgr;
@@ -88,9 +88,6 @@ public class BaseStepDialog_ConnectionLine_Test {
 
     dbMgr = DefaultBowl.getInstance().getManager( DatabaseManagementInterface.class );
   }
-
-  //TODO need to figure out where to replace calls to add databases to the meta with calls to add them to the bowl
-  // should only be adding local connections for testing override cases and edits to existing local connections
 
   @After
   public void perTestTeardown() throws KettleException {
@@ -128,7 +125,7 @@ public class BaseStepDialog_ConnectionLine_Test {
   }
 
   @Test
-  public void ignores_WhenConnectionNameIsUsed() throws Exception {
+  public void ignoresAdd_WhenConnectionNameIsNull() throws Exception {
     TransMeta transMeta = new TransMeta();
     dbMgr.addDatabase( createDefaultDatabase() );
 
@@ -149,32 +146,24 @@ public class BaseStepDialog_ConnectionLine_Test {
     }
   }
 
-  //@Test
+  @Test
   public void edits_globalConnectionWhenNotRenamed() throws Exception {
-    //TODO
     TransMeta transMeta = new TransMeta();
-    transMeta.addDatabase( createDefaultDatabase() );
+    DatabaseMeta db = createDefaultDatabase();
 
-
-    //OK.  things might be working as they should. In the case where you have 2 connections with the same name in default bowl and transMeta, you always get the bowl one because it takes precedence.  We could test taht.
-    // is there a way to view the transMeta's connection in that situation?
-
-
-    List<DatabaseMeta> bowlDbs = dbMgr.getDatabases();
-    List<DatabaseMeta> activeDbs = transMeta.getDatabases();
-    List<DatabaseMeta> transDbs3 = transMeta.getDatabaseManagementInterface().getDatabases();
-
-    dbMgr.addDatabase( createDefaultDatabase() );
-
-//    invokeAddConnectionListener( transMeta, INITIAL_NAME );
-    List<DatabaseMeta> bowlDbs2 = dbMgr.getDatabases();
-    List<DatabaseMeta> activeDbs2 = transMeta.getDatabases();
-    List<DatabaseMeta> transDbs4 = transMeta.getDatabaseManagementInterface().getDatabases();
-    assertEquals( 2, transMeta.getDatabases().size() );
-//    assertEquals( name, transMeta.getDatabase( 0 ).getName() );
-//    assertEquals( host, transMeta.getDatabase( 0 ).getHostname() );
+    transMeta.addDatabase( db );
+    dbMgr.addDatabase( db );
+    assertTotalDbs( transMeta, 2 );
 
     invokeEditConnectionListener( transMeta, INITIAL_NAME );
+
+    DatabaseMeta localDb = transMeta.getDatabaseManagementInterface().getDatabase( INITIAL_NAME );
+    DatabaseMeta globalDb =
+      transMeta.getDatabases().stream().filter( databaseMeta -> databaseMeta.getName().equals( INITIAL_NAME ) )
+        .findFirst().get();
+
+    assertEquals( INITIAL_HOST, localDb.getHostname() );
+    assertEquals( INPUT_HOST, globalDb.getHostname() );
   }
 
   @Test
@@ -194,8 +183,7 @@ public class BaseStepDialog_ConnectionLine_Test {
 
     invokeEditConnectionListener( transMeta, INPUT_NAME );
 
-    //TODO what's wrong here?
-//    assertOnlyOneActiveDb( transMeta, INPUT_NAME, INPUT_HOST );
+    assertOnlyOneActiveDb( transMeta, INPUT_NAME, INPUT_HOST );
     assertTotalDbs( transMeta, 1 );
   }
 

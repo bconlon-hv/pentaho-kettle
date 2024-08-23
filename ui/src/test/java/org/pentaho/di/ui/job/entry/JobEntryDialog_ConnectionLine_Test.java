@@ -25,14 +25,18 @@ package org.pentaho.di.ui.job.entry;
 import org.pentaho.di.core.bowl.DefaultBowl;
 import org.pentaho.di.core.KettleEnvironment;
 import org.pentaho.di.core.database.DatabaseMeta;
+import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.job.JobMeta;
 import org.pentaho.di.junit.rules.RestorePDIEngineEnvironment;
+import org.pentaho.di.shared.DatabaseManagementInterface;
 import org.pentaho.di.shared.MemorySharedObjectsIO;
 import org.pentaho.di.ui.core.database.dialog.DatabaseDialog;
 import org.pentaho.di.ui.spoon.Spoon;
 
 import java.util.function.Supplier;
+
 import org.eclipse.swt.custom.CCombo;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -43,6 +47,8 @@ import org.powermock.reflect.Whitebox;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
@@ -52,20 +58,44 @@ import static org.mockito.Mockito.times;
  * @author Andrey Khayrutdinov
  */
 public class JobEntryDialog_ConnectionLine_Test {
-  @ClassRule public static RestorePDIEngineEnvironment env = new RestorePDIEngineEnvironment();
+  @ClassRule
+  public static RestorePDIEngineEnvironment env = new RestorePDIEngineEnvironment();
 
-  private static String INITIAL_NAME = "qwerty";
-  private static String INPUT_NAME = "asdfg";
+  private static final String INITIAL_NAME = "qwerty";
+  private static final String INPUT_NAME = "asdfg";
 
-  private static String INITIAL_HOST = "1.2.3.4";
-  private static String INPUT_HOST = "5.6.7.8";
+  private static final String INITIAL_HOST = "1.2.3.4";
+  private static final String INPUT_HOST = "5.6.7.8";
+
+  private static JobEntryDialog mockDialog;
+  private static Supplier<Spoon> mockSupplier;
+  private static Spoon mockSpoon;
+  private static DatabaseManagementInterface dbMgr;
 
   @BeforeClass
   public static void initKettle() throws Exception {
     KettleEnvironment.init();
     DefaultBowl.getInstance().setSharedObjectsIO( new MemorySharedObjectsIO() );
+    DefaultBowl.getInstance().clearManagers();
+
+    mockSupplier = mock( Supplier.class );
+    mockSpoon = mock( Spoon.class );
+    mockDialog = mock( JobEntryDialog.class );
+
+    Whitebox.setInternalState( mockDialog, "spoonSupplier", mockSupplier );
+    when( mockSupplier.get() ).thenReturn( mockSpoon );
+    doReturn( DefaultBowl.getInstance() ).when( mockSpoon ).getBowl();
+
+    dbMgr = DefaultBowl.getInstance().getManager( DatabaseManagementInterface.class );
   }
 
+  @After
+  public void perTestTeardown() throws KettleException {
+    clearInvocations( mockSpoon );
+    for ( DatabaseMeta db : dbMgr.getDatabases() ) {
+      dbMgr.removeDatabase( db );
+    }
+  }
 
   @Test
   public void adds_WhenConnectionNameIsUnique() throws Exception {
@@ -73,89 +103,122 @@ public class JobEntryDialog_ConnectionLine_Test {
 
     invokeAddConnectionListener( jobMeta, INPUT_NAME );
 
-    assertOnlyDbExists( jobMeta, INPUT_NAME, INPUT_HOST );
+    assertOnlyOneActiveDb( jobMeta, INPUT_NAME, INPUT_HOST );
   }
 
   @Test
-  public void ignores_WhenConnectionNameIsUsed() throws Exception {
+  public void adds_WhenGlobalConnectionNameOverridesLocal() throws Exception {
     JobMeta jobMeta = new JobMeta();
-    jobMeta.getDatabaseManagementInterface().addDatabase( createDefaultDatabase() );
+
+    jobMeta.addDatabase( createDefaultDatabase() ); //local
+    assertOnlyOneActiveDb( jobMeta, INITIAL_NAME, INITIAL_HOST );
+    assertTotalDbs( jobMeta, 1 );
+
+    invokeAddConnectionListener( jobMeta, INITIAL_NAME ); //global
+    assertOnlyOneActiveDb( jobMeta, INITIAL_NAME, INPUT_HOST );
+    assertTotalDbs( jobMeta, 2 );
+  }
+
+  private void assertTotalDbs( JobMeta jobMeta, int expected ) throws KettleException {
+    assertEquals( expected,
+      jobMeta.getDatabaseManagementInterface().getDatabases().size() + dbMgr.getDatabases().size() );
+  }
+
+  @Test
+  public void ignoresAdd_WhenConnectionNameIsNull() throws Exception {
+    JobMeta jobMeta = new JobMeta();
+    dbMgr.addDatabase( createDefaultDatabase() );
 
     invokeAddConnectionListener( jobMeta, null );
 
-    assertOnlyDbExists( jobMeta, INITIAL_NAME, INITIAL_HOST );
+    assertOnlyOneActiveDb( jobMeta, INITIAL_NAME, INITIAL_HOST );
+    assertTotalDbs( jobMeta, 1 );
   }
 
   private void invokeAddConnectionListener( JobMeta jobMeta, String answeredName ) throws Exception {
-    JobEntryDialog dialog = mock( JobEntryDialog.class );
-    when( dialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), any() ) )
+    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), any() ) )
       .thenAnswer( new PropsSettingAnswer( answeredName, INPUT_HOST ) );
 
-    Supplier<Spoon> mockSupplier = mock( Supplier.class );
-    Spoon mockSpoon = mock( Spoon.class );
-    Whitebox.setInternalState( dialog, "spoonSupplier", mockSupplier );
-    when( mockSupplier.get() ).thenReturn( mockSpoon );
-    when( mockSpoon.getBowl() ).thenReturn( DefaultBowl.getInstance() );
-    dialog.jobMeta = jobMeta;
-    dialog.new AddConnectionListener( mock( CCombo.class ) ).widgetSelected( null );
+    mockDialog.jobMeta = jobMeta;
+    mockDialog.new AddConnectionListener( mock( CCombo.class ) ).widgetSelected( null );
     if ( answeredName != null ) {
       verify( mockSpoon, times( 1 ) ).refreshTree( anyString() );
     }
   }
 
   @Test
-  public void edits_globalConnection() throws Exception {
-    //TODO
+  public void edits_globalConnectionWhenNotRenamed() throws Exception {
+    JobMeta jobMeta = new JobMeta();
+    DatabaseMeta db = createDefaultDatabase();
+
+    jobMeta.addDatabase( db );
+    dbMgr.addDatabase( db );
+    assertTotalDbs( jobMeta, 2 );
+
+    invokeEditConnectionListener( jobMeta, INITIAL_NAME );
+
+    DatabaseMeta localDb = jobMeta.getDatabaseManagementInterface().getDatabase( INITIAL_NAME );
+    DatabaseMeta globalDb =
+      jobMeta.getDatabases().stream().filter( databaseMeta -> databaseMeta.getName().equals( INITIAL_NAME ) )
+        .findFirst().get();
+
+    assertEquals( INITIAL_HOST, localDb.getHostname() );
+    assertEquals( INPUT_HOST, globalDb.getHostname() );
   }
 
   @Test
-  public void edits_WhenNotRenamed() throws Exception {
+  public void edits_localConnectionWhenNotRenamed() throws Exception {
     JobMeta jobMeta = new JobMeta();
     jobMeta.getDatabaseManagementInterface().addDatabase( createDefaultDatabase() );
 
     invokeEditConnectionListener( jobMeta, INITIAL_NAME );
 
-    assertOnlyDbExists( jobMeta, INITIAL_NAME, INPUT_HOST );
+    assertOnlyOneActiveDb( jobMeta, INITIAL_NAME, INPUT_HOST );
   }
 
   @Test
   public void edits_WhenNewNameIsUnique() throws Exception {
     JobMeta jobMeta = new JobMeta();
-    jobMeta.getDatabaseManagementInterface().addDatabase( createDefaultDatabase() );
+    dbMgr.addDatabase( createDefaultDatabase() );
 
     invokeEditConnectionListener( jobMeta, INPUT_NAME );
 
-    assertOnlyDbExists( jobMeta, INPUT_NAME, INPUT_HOST );
+    assertOnlyOneActiveDb( jobMeta, INPUT_NAME, INPUT_HOST );
+    assertTotalDbs( jobMeta, 1 );
   }
 
   @Test
-  public void ignores_WhenNewNameIsUsed() throws Exception {
+  public void ignores_EditToLocalConnectionWhenNewNameIsNull() throws Exception {
     JobMeta jobMeta = new JobMeta();
     jobMeta.getDatabaseManagementInterface().addDatabase( createDefaultDatabase() );
 
     invokeEditConnectionListener( jobMeta, null );
 
-    assertOnlyDbExists( jobMeta, INITIAL_NAME, INITIAL_HOST );
+    assertOnlyOneActiveDb( jobMeta, INITIAL_NAME, INITIAL_HOST );
+    assertTotalDbs( jobMeta, 1 );
+  }
+
+  @Test
+  public void ignores_EditToGlobalConnectionWhenNewNameIsNull() throws Exception {
+    JobMeta jobMeta = new JobMeta();
+    dbMgr.addDatabase( createDefaultDatabase() );
+
+    invokeEditConnectionListener( jobMeta, null );
+
+    assertOnlyOneActiveDb( jobMeta, INITIAL_NAME, INITIAL_HOST );
+    assertTotalDbs( jobMeta, 1 );
   }
 
   private void invokeEditConnectionListener( JobMeta jobMeta, String answeredName ) throws Exception {
-    JobEntryDialog dialog = mock( JobEntryDialog.class );
-    when( dialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta() ) )
+    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta() ) )
       .thenAnswer( new PropsSettingAnswer( answeredName, INPUT_HOST ) );
-
-    Supplier<Spoon> mockSupplier = mock( Supplier.class );
-    Spoon mockSpoon = mock( Spoon.class );
-    Whitebox.setInternalState( dialog, "spoonSupplier", mockSupplier );
-    when( mockSupplier.get() ).thenReturn( mockSpoon );
-    when( mockSpoon.getBowl() ).thenReturn( DefaultBowl.getInstance() );
 
     CCombo combo = mock( CCombo.class );
     when( combo.getText() ).thenReturn( INITIAL_NAME );
 
-    dialog.jobMeta = jobMeta;
-    dialog.new EditConnectionListener( combo ).widgetSelected( null );
+    mockDialog.jobMeta = jobMeta;
+    mockDialog.new EditConnectionListener( combo ).widgetSelected( null );
   }
-
 
   private DatabaseMeta createDefaultDatabase() {
     DatabaseMeta existing = new DatabaseMeta();
@@ -164,7 +227,7 @@ public class JobEntryDialog_ConnectionLine_Test {
     return existing;
   }
 
-  private void assertOnlyDbExists( JobMeta jobMeta, String name, String host ) {
+  private void assertOnlyOneActiveDb( JobMeta jobMeta, String name, String host ) {
     assertEquals( 1, jobMeta.getDatabases().size() );
     assertEquals( name, jobMeta.getDatabase( 0 ).getName() );
     assertEquals( host, jobMeta.getDatabase( 0 ).getHostname() );
@@ -220,17 +283,17 @@ public class JobEntryDialog_ConnectionLine_Test {
                                                                   String expectedResult ) throws Exception {
     DatabaseDialog databaseDialog = mock( DatabaseDialog.class );
     when( databaseDialog.open() ).thenReturn( inputName );
+    when( databaseDialog.getDatabaseMeta() ).thenReturn( createDefaultDatabase() );
 
     JobMeta jobMeta = new JobMeta();
     DatabaseMeta db = createDefaultDatabase();
-    jobMeta.getDatabaseManagementInterface().addDatabase( db );
+    dbMgr.addDatabase( db );
 
-    JobEntryDialog dialog = mock( JobEntryDialog.class );
-    dialog.databaseDialog = databaseDialog;
-    dialog.jobMeta = jobMeta;
-    when( dialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta() ) ).thenCallRealMethod();
+    mockDialog.databaseDialog = databaseDialog;
+    mockDialog.jobMeta = jobMeta;
+    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta() ) ).thenCallRealMethod();
 
-    String result = dialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) db.clone(), db );
+    String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) db.clone(), db );
     assertEquals( expectedResult, result );
 
     // database dialog should be shown only once
@@ -245,8 +308,8 @@ public class JobEntryDialog_ConnectionLine_Test {
     db2.setName( INPUT_NAME );
 
     JobMeta jobMeta = new JobMeta();
-    jobMeta.getDatabaseManagementInterface().addDatabase( db1 );
-    jobMeta.getDatabaseManagementInterface().addDatabase( db2 );
+    dbMgr.addDatabase( db1 );
+    dbMgr.addDatabase( db2 );
 
     final String expectedResult = INPUT_NAME + "2";
 
@@ -261,19 +324,17 @@ public class JobEntryDialog_ConnectionLine_Test {
       // unique value
       .thenReturn( expectedResult );
 
-
-    JobEntryDialog dialog = mock( JobEntryDialog.class );
-    dialog.databaseDialog = databaseDialog;
-    dialog.jobMeta = jobMeta;
-    when( dialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta() ) ).thenCallRealMethod();
+    mockDialog.databaseDialog = databaseDialog;
+    mockDialog.jobMeta = jobMeta;
+    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta() ) ).thenCallRealMethod();
 
     // try to rename db1 ("qwerty")
-    String result = dialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) db1.clone(), db1 );
+    String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) db1.clone(), db1 );
     assertEquals( expectedResult, result );
 
     // database dialog should be shown four times
     verify( databaseDialog, times( 4 ) ).open();
     // and the error message should be shown three times
-    verify( dialog, times( 3 ) ).showDbExistsDialog( anyDbMeta() );
+    verify( mockDialog, times( 3 ) ).showDbExistsDialog( anyDbMeta() );
   }
 }
