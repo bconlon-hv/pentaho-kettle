@@ -45,11 +45,14 @@ import org.eclipse.swt.widgets.Text;
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.database.GenericDatabaseMeta;
+import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.plugins.DatabasePluginType;
 import org.pentaho.di.core.plugins.PluginInterface;
 import org.pentaho.di.core.plugins.PluginRegistry;
 import org.pentaho.di.i18n.BaseMessages;
+import org.pentaho.di.shared.DatabaseManagementInterface;
 import org.pentaho.di.ui.core.PropsUI;
+import org.pentaho.di.ui.spoon.Spoon;
 
 /**
  *
@@ -236,9 +239,18 @@ public class CreateDatabaseWizardPage1 extends WizardPage {
       return false;
     }
     if ( name != null && DatabaseMeta.findDatabase( databases, name ) != null ) {
-      setErrorMessage( BaseMessages.getString( PKG, "CreateDatabaseWizardPage1.ErrorMessage.DBNameExists",
-        name.trim() ) );
-      return false;
+      try {
+        DatabaseManagementInterface dbMgr = Spoon.getInstance().getBowl().getManager( DatabaseManagementInterface.class );
+        if ( dbMgr.getDatabases().stream().anyMatch( db -> db.getName().equals( name ) ) ) {
+          setErrorMessage( BaseMessages.getString( PKG, "CreateDatabaseWizardPage1.ErrorMessage.DBNameExists",
+            name.trim() ) );
+          return false;
+        }
+      } catch ( KettleException e ) {
+        //TODO do something...
+        // oh maybe just set the error message in the wizard
+      }
+      return true;
     } else {
       getDatabaseInfo();
       setErrorMessage( null );
