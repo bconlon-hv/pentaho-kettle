@@ -246,12 +246,14 @@ public class CreateDatabaseWizardPage1 extends WizardPage {
           setErrorMessage( BaseMessages.getString( PKG, "CreateDatabaseWizardPage1.ErrorMessage.DBNameExists",
             name.trim() ) );
           return false;
+        } else {
+          return true;
         }
       } catch ( KettleException e ) {
         setErrorMessage(
           BaseMessages.getString( PKG, "CreateDatabaseWizardPage1.ErrorMessage.UnexpectedError", name.trim() ) );
+        return false;
       }
-      return true;
     } else {
       getDatabaseInfo();
       setErrorMessage( null );
