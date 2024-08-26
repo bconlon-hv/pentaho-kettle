@@ -1559,51 +1559,36 @@ public class BaseStepDialog extends Dialog {
 
     public void widgetSelected( SelectionEvent e ) {
       DatabaseMeta databaseMeta = transMeta.findDatabase( wConnection.getText() );
+      String originalName = databaseMeta.getName();
       if ( databaseMeta != null ) {
         // cloning to avoid spoiling data on cancel or incorrect input
         DatabaseMeta clone = (DatabaseMeta) databaseMeta.clone();
         // setting old Id, so a repository (if it used) could find and replace the existing connection
         clone.setObjectId( databaseMeta.getObjectId() );
-        String connectionName = showDbDialogUnlessCancelledOrValid( clone, databaseMeta );
-        if ( connectionName != null ) {
+        String editedConnectionName = showDbDialogUnlessCancelledOrValid( clone, databaseMeta );
+        if ( editedConnectionName != null ) {
           // These changes won't update shared.xml
           try {
             DatabaseManagementInterface dbMgr =
               spoonSupplier.get().getBowl().getManager( DatabaseManagementInterface.class );
             DatabaseManagementInterface globalDbMgr =
               DefaultBowl.getInstance().getManager( DatabaseManagementInterface.class );
-            if ( connectionName.equals( databaseMeta.getName() ) ) {
-              // editing without rename
-              if ( dbMgr.getDatabase( connectionName ) != null ) {
-                dbMgr.removeDatabase( databaseMeta );
-                dbMgr.addDatabase( clone );
-              } else if ( globalDbMgr.getDatabase( connectionName ) != null ) {
-                globalDbMgr.removeDatabase( databaseMeta );
-                dbMgr.addDatabase( clone );
-              } else if ( Arrays.stream( transMeta.getDatabaseNames() ).anyMatch( connectionName::equals ) ) {
-                transMeta.getDatabaseManagementInterface().removeDatabase( databaseMeta );
-                transMeta.getDatabaseManagementInterface().addDatabase( clone );
-              }
-            } else {
-              // editing with rename
-              String originalName = databaseMeta.getName();
-              if ( dbMgr.getDatabase( originalName ) != null ) {
-                dbMgr.removeDatabase( databaseMeta );
-                dbMgr.addDatabase( clone );
-              } else if ( globalDbMgr.getDatabase( originalName ) != null ) {
-                globalDbMgr.removeDatabase( databaseMeta );
-                dbMgr.addDatabase( clone );
-              } else if ( Arrays.stream( transMeta.getDatabaseNames() ).anyMatch( originalName::equals ) ) {
-                transMeta.getDatabaseManagementInterface().removeDatabase( databaseMeta );
-                transMeta.getDatabaseManagementInterface().addDatabase( clone );
-              }
+            if ( dbMgr.getDatabase( originalName ) != null ) {
+              dbMgr.removeDatabase( databaseMeta );
+              dbMgr.addDatabase( clone );
+            } else if ( globalDbMgr.getDatabase( originalName ) != null ) {
+              globalDbMgr.removeDatabase( databaseMeta );
+              dbMgr.addDatabase( clone );
+            } else if ( Arrays.stream( transMeta.getDatabaseNames() ).anyMatch( originalName::equals ) ) {
+              transMeta.getDatabaseManagementInterface().removeDatabase( databaseMeta );
+              transMeta.getDatabaseManagementInterface().addDatabase( clone );
             }
           } catch ( KettleException ex ) {
             new ErrorDialog( wConnection.getShell(),
               BaseMessages.getString( PKG, "BaseStepDialog.UnexpectedErrorEditingConnection.DialogTitle" ),
               BaseMessages.getString( PKG, "BaseStepDialog.UnexpectedErrorEditingConnection.DialogMessage" ), ex );
           }
-          reinitConnectionDropDown( wConnection, connectionName );
+          reinitConnectionDropDown( wConnection, editedConnectionName );
           spoonSupplier.get().refreshTree( DBConnectionFolderProvider.STRING_CONNECTIONS );
         }
       }
@@ -1611,8 +1596,8 @@ public class BaseStepDialog extends Dialog {
 
     void showErrorDialog( Exception e ) {
       new ErrorDialog( wConnection.getShell(), BaseMessages.getString( PKG,
-          "BaseStep.Exception.UnexpectedErrorEditingConnection.DialogTitle" ), BaseMessages.getString( PKG,
-              "BaseStep.Exception.UnexpectedErrorEditingConnection.DialogMessage" ), e );
+        "BaseStep.Exception.UnexpectedErrorEditingConnection.DialogTitle" ), BaseMessages.getString( PKG,
+        "BaseStep.Exception.UnexpectedErrorEditingConnection.DialogMessage" ), e );
     }
   }
 }

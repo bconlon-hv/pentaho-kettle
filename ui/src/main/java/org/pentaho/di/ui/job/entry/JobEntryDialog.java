@@ -416,49 +416,35 @@ public class JobEntryDialog extends Dialog {
 
     @Override public void widgetSelected( SelectionEvent e ) {
       DatabaseMeta databaseMeta = jobMeta.findDatabase( wConnection.getText() );
+      String originalName = databaseMeta.getName();
       if ( databaseMeta != null ) {
         // cloning to avoid spoiling data on cancel or incorrect input
         DatabaseMeta clone = (DatabaseMeta) databaseMeta.clone();
-        String connectionName = showDbDialogUnlessCancelledOrValid( clone, databaseMeta );
-        if ( connectionName != null ) {
+        String editedConnectionName = showDbDialogUnlessCancelledOrValid( clone, databaseMeta );
+        if ( editedConnectionName != null ) {
           // need to replace the old connection with a new one
           try {
             DatabaseManagementInterface dbMgr =
               spoonSupplier.get().getBowl().getManager( DatabaseManagementInterface.class );
             DatabaseManagementInterface globalDbMgr =
               DefaultBowl.getInstance().getManager( DatabaseManagementInterface.class );
-            if ( connectionName.equals( databaseMeta.getName() ) ) {
-              // editing without rename
-              if ( dbMgr.getDatabase( connectionName ) != null ) {
-                dbMgr.removeDatabase( databaseMeta );
-                dbMgr.addDatabase( clone );
-              } else if ( globalDbMgr.getDatabase( connectionName ) != null ) {
-                globalDbMgr.removeDatabase( databaseMeta );
-                dbMgr.addDatabase( clone );
-              } else if ( Arrays.stream( jobMeta.getDatabaseNames() ).anyMatch( connectionName::equals ) ) {
-                jobMeta.getDatabaseManagementInterface().removeDatabase( databaseMeta );
-                jobMeta.getDatabaseManagementInterface().addDatabase( clone );
-              }
-            } else {
-              // editing with rename
-              String originalName = databaseMeta.getName();
-              if ( dbMgr.getDatabase( originalName ) != null ) {
-                dbMgr.removeDatabase( databaseMeta );
-                dbMgr.addDatabase( clone );
-              } else if ( globalDbMgr.getDatabase( originalName ) != null ) {
-                globalDbMgr.removeDatabase( databaseMeta );
-                dbMgr.addDatabase( clone );
-              } else if ( Arrays.stream( jobMeta.getDatabaseNames() ).anyMatch( originalName::equals ) ) {
-                jobMeta.getDatabaseManagementInterface().removeDatabase( databaseMeta );
-                jobMeta.getDatabaseManagementInterface().addDatabase( clone );
-              }
+            if ( dbMgr.getDatabase( originalName ) != null ) {
+              dbMgr.removeDatabase( databaseMeta );
+              dbMgr.addDatabase( clone );
+            } else if ( globalDbMgr.getDatabase( originalName ) != null ) {
+              globalDbMgr.removeDatabase( databaseMeta );
+              dbMgr.addDatabase( clone );
+            } else if ( Arrays.stream( jobMeta.getDatabaseNames() ).anyMatch( originalName::equals ) ) {
+              jobMeta.getDatabaseManagementInterface().removeDatabase( databaseMeta );
+              jobMeta.getDatabaseManagementInterface().addDatabase( clone );
             }
           } catch ( KettleException exception ) {
             new ErrorDialog( spoonSupplier.get().getShell(),
               BaseMessages.getString( PKG, "Spoon.Dialog.ErrorSavingConnection.Title" ),
-              BaseMessages.getString( PKG, "Spoon.Dialog.ErrorSavingConnection.Message", databaseMeta.getName() ), exception );
+              BaseMessages.getString( PKG, "Spoon.Dialog.ErrorSavingConnection.Message", databaseMeta.getName() ),
+              exception );
           }
-          reinitConnectionDropDown( wConnection, connectionName );
+          reinitConnectionDropDown( wConnection, editedConnectionName );
           spoonSupplier.get().refreshTree( DBConnectionFolderProvider.STRING_CONNECTIONS );
         }
       }
