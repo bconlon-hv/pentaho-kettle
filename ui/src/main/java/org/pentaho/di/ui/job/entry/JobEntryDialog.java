@@ -35,6 +35,7 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.pentaho.di.core.bowl.DefaultBowl;
 import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.logging.LoggingObjectInterface;
@@ -45,6 +46,7 @@ import org.pentaho.di.job.JobMeta;
 import org.pentaho.di.job.entry.JobEntryInterface;
 import org.pentaho.di.repository.Repository;
 import org.pentaho.di.repository.RepositoryElementMetaInterface;
+import org.pentaho.di.shared.DatabaseManagementInterface;
 import org.pentaho.di.trans.step.StepInterface;
 import org.pentaho.di.ui.core.PropsUI;
 import org.pentaho.di.ui.core.database.dialog.DatabaseDialog;
@@ -55,6 +57,7 @@ import org.pentaho.di.ui.spoon.tree.provider.DBConnectionFolderProvider;
 import org.pentaho.di.ui.util.DialogUtils;
 import org.pentaho.metastore.api.IMetaStore;
 
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 /**
@@ -214,13 +217,16 @@ public class JobEntryDialog extends Dialog {
         DatabaseMeta newDBInfo = cdw.createAndRunDatabaseWizard( shell, props, jobMeta.getDatabases() );
         if ( newDBInfo != null ) {
           try {
-            jobMeta.getDatabaseManagementInterface().addDatabase( newDBInfo );
+            DatabaseManagementInterface dbMgr =
+                    spoonSupplier.get().getBowl().getManager( DatabaseManagementInterface.class );
+            dbMgr.addDatabase( newDBInfo );
           } catch ( KettleException exception ) {
             new ErrorDialog( spoonSupplier.get().getShell(),
               BaseMessages.getString( PKG, "Spoon.Dialog.ErrorSavingConnection.Title" ),
               BaseMessages.getString( PKG, "Spoon.Dialog.ErrorSavingConnection.Message", newDBInfo.getName() ), exception );
           }
           reinitConnectionDropDown( wConnection, newDBInfo.getName() );
+          spoonSupplier.get().refreshTree( DBConnectionFolderProvider.STRING_CONNECTIONS );
         }
       }
     } );
@@ -283,7 +289,7 @@ public class JobEntryDialog extends Dialog {
     DatabaseDialog cid = getDatabaseDialog();
     cid.setDatabaseMeta( changing );
     cid.setModalDialog( true );
-    String origname = origin.getName();
+    String origname = origin == null ? null : origin.getName();
 
     String name = null;
     boolean repeat = true;
@@ -303,7 +309,19 @@ public class JobEntryDialog extends Dialog {
           // OK was pressed and input is valid
           repeat = false;
         } else {
-          showDbExistsDialog( changing );
+          try {
+            DatabaseManagementInterface dbMgr =
+              spoonSupplier.get().getBowl().getManager( DatabaseManagementInterface.class );
+            if ( dbMgr.getDatabase( changing.getName() ) != null ) {
+              showDbExistsDialog( changing );
+            } else {
+              repeat = false;
+            }
+          } catch ( KettleException e ) {
+            new ErrorDialog( shell,
+              BaseMessages.getString( PKG, "BaseStepDialog.UnexpectedErrorEditingConnection.DialogTitle" ),
+              BaseMessages.getString( PKG, "BaseStepDialog.UnexpectedErrorEditingConnection.DialogMessage" ), e );
+          }
         }
       }
     }
@@ -373,7 +391,9 @@ public class JobEntryDialog extends Dialog {
       String connectionName = showDbDialogUnlessCancelledOrValid( databaseMeta, null );
       if ( connectionName != null ) {
         try {
-          jobMeta.getDatabaseManagementInterface().addDatabase( databaseMeta );
+          DatabaseManagementInterface dbMgr =
+                  spoonSupplier.get().getBowl().getManager( DatabaseManagementInterface.class );
+          dbMgr.addDatabase( databaseMeta );
         } catch ( KettleException exception ) {
           new ErrorDialog( spoonSupplier.get().getShell(),
             BaseMessages.getString( PKG, "Spoon.Dialog.ErrorSavingConnection.Title" ),
@@ -396,21 +416,36 @@ public class JobEntryDialog extends Dialog {
 
     @Override public void widgetSelected( SelectionEvent e ) {
       DatabaseMeta databaseMeta = jobMeta.findDatabase( wConnection.getText() );
+      String originalName = databaseMeta.getName();
       if ( databaseMeta != null ) {
         // cloning to avoid spoiling data on cancel or incorrect input
         DatabaseMeta clone = (DatabaseMeta) databaseMeta.clone();
-        String connectionName = showDbDialogUnlessCancelledOrValid( clone, databaseMeta );
-        if ( connectionName != null ) {
+        String editedConnectionName = showDbDialogUnlessCancelledOrValid( clone, databaseMeta );
+        if ( editedConnectionName != null ) {
           // need to replace the old connection with a new one
           try {
-            jobMeta.getDatabaseManagementInterface().removeDatabase( databaseMeta );
-            jobMeta.getDatabaseManagementInterface().addDatabase( clone );
+            DatabaseManagementInterface dbMgr =
+              spoonSupplier.get().getBowl().getManager( DatabaseManagementInterface.class );
+            DatabaseManagementInterface globalDbMgr =
+              DefaultBowl.getInstance().getManager( DatabaseManagementInterface.class );
+            if ( dbMgr.getDatabase( originalName ) != null ) {
+              dbMgr.removeDatabase( databaseMeta );
+              dbMgr.addDatabase( clone );
+            } else if ( globalDbMgr.getDatabase( originalName ) != null ) {
+              globalDbMgr.removeDatabase( databaseMeta );
+              globalDbMgr.addDatabase( clone );
+            } else if ( Arrays.stream( jobMeta.getDatabaseNames() ).anyMatch( originalName::equals ) ) {
+              jobMeta.getDatabaseManagementInterface().removeDatabase( databaseMeta );
+              jobMeta.getDatabaseManagementInterface().addDatabase( clone );
+            }
           } catch ( KettleException exception ) {
             new ErrorDialog( spoonSupplier.get().getShell(),
               BaseMessages.getString( PKG, "Spoon.Dialog.ErrorSavingConnection.Title" ),
-              BaseMessages.getString( PKG, "Spoon.Dialog.ErrorSavingConnection.Message", databaseMeta.getName() ), exception );
+              BaseMessages.getString( PKG, "Spoon.Dialog.ErrorSavingConnection.Message", databaseMeta.getName() ),
+              exception );
           }
-          reinitConnectionDropDown( wConnection, connectionName );
+          reinitConnectionDropDown( wConnection, editedConnectionName );
+          spoonSupplier.get().refreshTree( DBConnectionFolderProvider.STRING_CONNECTIONS );
         }
       }
     }
