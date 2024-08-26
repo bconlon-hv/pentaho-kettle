@@ -231,8 +231,8 @@ public class CreateDatabaseWizardPage1 extends WizardPage {
 
   public boolean canFlipToNextPage() {
     String name = wName.getText() != null ? wName.getText().length() > 0 ? wName.getText() : null : null;
-    String dbType = wDBType.getSelection().length == 1 ? wDBType.getSelection()[0] : null;
-    String acType = wAccType.getSelection().length == 1 ? wAccType.getSelection()[0] : null;
+    String dbType = wDBType.getSelection().length == 1 ? wDBType.getSelection()[ 0 ] : null;
+    String acType = wAccType.getSelection().length == 1 ? wAccType.getSelection()[ 0 ] : null;
 
     if ( name == null || dbType == null || acType == null ) {
       setErrorMessage( BaseMessages.getString( PKG, "CreateDatabaseWizardPage1.ErrorMessage.InvalidInput" ) );
@@ -240,15 +240,16 @@ public class CreateDatabaseWizardPage1 extends WizardPage {
     }
     if ( name != null && DatabaseMeta.findDatabase( databases, name ) != null ) {
       try {
-        DatabaseManagementInterface dbMgr = Spoon.getInstance().getBowl().getManager( DatabaseManagementInterface.class );
+        DatabaseManagementInterface dbMgr =
+          Spoon.getInstance().getBowl().getManager( DatabaseManagementInterface.class );
         if ( dbMgr.getDatabases().stream().anyMatch( db -> db.getName().equals( name ) ) ) {
           setErrorMessage( BaseMessages.getString( PKG, "CreateDatabaseWizardPage1.ErrorMessage.DBNameExists",
             name.trim() ) );
           return false;
         }
       } catch ( KettleException e ) {
-        //TODO do something...
-        // oh maybe just set the error message in the wizard
+        setErrorMessage(
+          BaseMessages.getString( PKG, "CreateDatabaseWizardPage1.ErrorMessage.UnexpectedError", name.trim() ) );
       }
       return true;
     } else {
