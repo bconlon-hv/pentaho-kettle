@@ -247,6 +247,7 @@ public class CreateDatabaseWizardPage1 extends WizardPage {
             name.trim() ) );
           return false;
         } else {
+          // new connection can reuse name of an existing connection, but only if they are at different levels
           getDatabaseInfo();
           setErrorMessage( null );
           setMessage( BaseMessages.getString( PKG, "CreateDatabaseWizardPage1.Message.Next" ) );
