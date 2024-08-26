@@ -247,6 +247,9 @@ public class CreateDatabaseWizardPage1 extends WizardPage {
             name.trim() ) );
           return false;
         } else {
+          getDatabaseInfo();
+          setErrorMessage( null );
+          setMessage( BaseMessages.getString( PKG, "CreateDatabaseWizardPage1.Message.Next" ) );
           return true;
         }
       } catch ( KettleException e ) {
