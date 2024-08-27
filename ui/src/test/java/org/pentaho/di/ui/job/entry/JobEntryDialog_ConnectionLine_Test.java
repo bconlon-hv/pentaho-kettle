@@ -281,6 +281,10 @@ public class JobEntryDialog_ConnectionLine_Test {
     }
   }
 
+  //TODO here and in the basestep tests, add more tests for name collisions during create/edit.
+  // errors should occur only when collisions happen at same level
+  // need to test for both local and global
+  // add tests to verify that the dialog is not shown in cases where name collisions are allowed
 
   @Test
   public void showDbDialog_ReturnsNull_OnCancel() throws Exception {
