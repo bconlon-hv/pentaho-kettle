@@ -148,7 +148,7 @@ public class BaseStepDialog_ConnectionLine_Test {
   }
 
   private void invokeAddConnectionListener( TransMeta transMeta, String answeredName ) throws Exception {
-    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), any() ) )
+    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), any(), anyDbMgr() ) )
       .thenAnswer( new PropsSettingAnswer( answeredName, INPUT_HOST ) );
 
     mockDialog.transMeta = transMeta;
@@ -169,7 +169,7 @@ public class BaseStepDialog_ConnectionLine_Test {
     assertNumberOfGlobalDBs( 1 );
     assertNumberOfLocalDBs( transMeta, 1 );
 
-    invokeEditConnectionListener( transMeta, INITIAL_NAME );
+    invokeEditConnectionListener( transMeta, INITIAL_NAME, dbMgr );
 
     DatabaseMeta localDb = transMeta.getDatabaseManagementInterface().getDatabase( INITIAL_NAME );
     DatabaseMeta globalDb =
@@ -186,9 +186,10 @@ public class BaseStepDialog_ConnectionLine_Test {
   @Test
   public void edits_localConnectionWhenNotRenamed() throws Exception {
     TransMeta transMeta = new TransMeta();
-    transMeta.getDatabaseManagementInterface().addDatabase( createDefaultDatabase() );
+    DatabaseManagementInterface transDbMgr = transMeta.getDatabaseManagementInterface();
+    transDbMgr.addDatabase( createDefaultDatabase() );
 
-    invokeEditConnectionListener( transMeta, INITIAL_NAME );
+    invokeEditConnectionListener( transMeta, INITIAL_NAME, transDbMgr );
 
     assertOnlyOneActiveDb( transMeta, INITIAL_NAME, INPUT_HOST );
     assertTotalDbs( transMeta, 1 );
@@ -201,7 +202,7 @@ public class BaseStepDialog_ConnectionLine_Test {
     TransMeta transMeta = new TransMeta();
     dbMgr.addDatabase( createDefaultDatabase() );
 
-    invokeEditConnectionListener( transMeta, INPUT_NAME );
+    invokeEditConnectionListener( transMeta, INPUT_NAME, dbMgr );
 
     assertOnlyOneActiveDb( transMeta, INPUT_NAME, INPUT_HOST );
     assertTotalDbs( transMeta, 1 );
@@ -212,9 +213,10 @@ public class BaseStepDialog_ConnectionLine_Test {
   @Test
   public void ignores_EditToLocalConnectionWhenNewNameIsNull() throws Exception {
     TransMeta transMeta = new TransMeta();
-    transMeta.getDatabaseManagementInterface().addDatabase( createDefaultDatabase() );
+    DatabaseManagementInterface transDbMgr = transMeta.getDatabaseManagementInterface();
+    transDbMgr.addDatabase( createDefaultDatabase() );
 
-    invokeEditConnectionListener( transMeta, null );
+    invokeEditConnectionListener( transMeta, null, transDbMgr );
 
     assertOnlyOneActiveDb( transMeta, INITIAL_NAME, INITIAL_HOST );
     assertTotalDbs( transMeta, 1 );
@@ -227,7 +229,7 @@ public class BaseStepDialog_ConnectionLine_Test {
     TransMeta transMeta = new TransMeta();
     dbMgr.addDatabase( createDefaultDatabase() );
 
-    invokeEditConnectionListener( transMeta, null );
+    invokeEditConnectionListener( transMeta, null, dbMgr );
 
     assertOnlyOneActiveDb( transMeta, INITIAL_NAME, INITIAL_HOST );
     assertTotalDbs( transMeta, 1 );
@@ -235,8 +237,9 @@ public class BaseStepDialog_ConnectionLine_Test {
     assertNumberOfLocalDBs( transMeta, 0 );
   }
 
-  private void invokeEditConnectionListener( TransMeta transMeta, String answeredName ) throws Exception {
-    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta() ) )
+  private void invokeEditConnectionListener( TransMeta transMeta, String answeredName,
+                                             DatabaseManagementInterface dbMgr ) throws Exception {
+    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta(), anyDbMgr() ) )
       .thenAnswer( new PropsSettingAnswer( answeredName, INPUT_HOST ) );
 
     CCombo combo = mock( CCombo.class );
@@ -263,6 +266,9 @@ public class BaseStepDialog_ConnectionLine_Test {
     return any( DatabaseMeta.class );
   }
 
+  private static DatabaseManagementInterface anyDbMgr() {
+    return any( DatabaseManagementInterface.class );
+  }
 
   private static class PropsSettingAnswer implements Answer<String> {
     private final String name;
@@ -318,10 +324,10 @@ public class BaseStepDialog_ConnectionLine_Test {
 
     mockDialog.databaseDialog = databaseDialog;
     mockDialog.transMeta = transMeta;
-    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta() ) ).thenCallRealMethod();
+    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta(), anyDbMgr() ) ).thenCallRealMethod();
     when( mockDialog.getDatabaseDialog( any() ) ).thenCallRealMethod();
 
-    String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) db.clone(), db );
+    String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) db.clone(), db, dbMgr );
     assertEquals( expectedResult, result );
 
     // database dialog should be shown only once
@@ -356,11 +362,11 @@ public class BaseStepDialog_ConnectionLine_Test {
 
     mockDialog.databaseDialog = databaseDialog;
     mockDialog.transMeta = transMeta;
-    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta() ) ).thenCallRealMethod();
+    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta(), anyDbMgr() ) ).thenCallRealMethod();
     when( mockDialog.getDatabaseDialog( any() ) ).thenCallRealMethod();
 
     // try to rename db1 ("qwerty")
-    String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) db1.clone(), db1 );
+    String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) db1.clone(), db1, dbMgr );
     assertEquals( expectedResult, result );
 
     // database dialog should be shown four times
