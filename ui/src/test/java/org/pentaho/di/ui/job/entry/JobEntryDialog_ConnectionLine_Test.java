@@ -33,6 +33,7 @@ import org.pentaho.di.shared.MemorySharedObjectsIO;
 import org.pentaho.di.ui.core.database.dialog.DatabaseDialog;
 import org.pentaho.di.ui.spoon.Spoon;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 import org.eclipse.swt.custom.CCombo;
@@ -92,6 +93,7 @@ public class JobEntryDialog_ConnectionLine_Test {
   @After
   public void perTestTeardown() throws KettleException {
     clearInvocations( mockSpoon );
+    clearInvocations( mockDialog );
     for ( DatabaseMeta db : dbMgr.getDatabases() ) {
       dbMgr.removeDatabase( db );
     }
@@ -106,6 +108,13 @@ public class JobEntryDialog_ConnectionLine_Test {
     assertOnlyOneActiveDb( jobMeta, INPUT_NAME, INPUT_HOST );
     assertNumberOfGlobalDBs( 1 );
     assertNumberOfLocalDBs( jobMeta, 0 );
+  }
+
+  @Test
+  public void ignoresAdd_WhenConnectionNameDiffersByCase() throws Exception {
+    //TODO
+
+    // TODO also one for same name with spaces
   }
 
   @Test
@@ -186,7 +195,7 @@ public class JobEntryDialog_ConnectionLine_Test {
   @Test
   public void edits_localConnectionWhenNotRenamed() throws Exception {
     JobMeta jobMeta = new JobMeta();
-    jobMeta.getDatabaseManagementInterface().addDatabase( createDefaultDatabase() );
+    jobMeta.addDatabase( createDefaultDatabase() );
 
     invokeEditConnectionListener( jobMeta, INITIAL_NAME );
 
@@ -212,7 +221,7 @@ public class JobEntryDialog_ConnectionLine_Test {
   @Test
   public void ignores_EditToLocalConnectionWhenNewNameIsNull() throws Exception {
     JobMeta jobMeta = new JobMeta();
-    jobMeta.getDatabaseManagementInterface().addDatabase( createDefaultDatabase() );
+    jobMeta.addDatabase( createDefaultDatabase() );
 
     invokeEditConnectionListener( jobMeta, null );
 
@@ -285,49 +294,75 @@ public class JobEntryDialog_ConnectionLine_Test {
     }
   }
 
-  //TODO here and in the basestep tests, add more tests for name collisions during create/edit.
-  // errors should occur only when collisions happen at same level
-  // need to test for both local and global
-  // add tests to verify that the dialog is not shown in cases where name collisions are allowed
-
   @Test
-  public void showDbDialog_ReturnsNull_OnCancel() throws Exception {
+  public void showDbDialog_ReturnsNull_OnCancel_GlobalDb() throws Exception {
     // null as input emulates cancelling
-    test_showDbDialogUnlessCancelledOrValid_ShownOnce( null, null );
+    test_showDbDialogUnlessCancelledOrValid_ShownOnce( null, null, "global" );
   }
 
   @Test
-  public void showDbDialog_ReturnsInputName_WhenItIsUnique() throws Exception {
-    test_showDbDialogUnlessCancelledOrValid_ShownOnce( INPUT_NAME, INPUT_NAME );
+  public void showDbDialog_ReturnsInputName_WhenItIsUnique_GlobalDb() throws Exception {
+    test_showDbDialogUnlessCancelledOrValid_ShownOnce( INPUT_NAME, INPUT_NAME, "global" );
   }
 
   @Test
-  public void showDbDialog_ReturnsInputName_WhenItIsUnique_WithSpaces() throws Exception {
+  public void showDbDialog_ReturnsInputName_WhenItIsUnique_WithSpaces_GlobalDb() throws Exception {
     String input = " " + INPUT_NAME + " ";
-    test_showDbDialogUnlessCancelledOrValid_ShownOnce( input, INPUT_NAME );
+    test_showDbDialogUnlessCancelledOrValid_ShownOnce( input, INPUT_NAME, "global" );
   }
 
   @Test
-  public void showDbDialog_ReturnsExistingName_WhenNameWasNotChanged() throws Exception {
+  public void showDbDialog_ReturnsExistingName_WhenNameWasNotChanged_GlobalDb() throws Exception {
     // this is the case of editing when name was not changed (e.g., host was updated)
-    test_showDbDialogUnlessCancelledOrValid_ShownOnce( INITIAL_NAME, INITIAL_NAME );
+    test_showDbDialogUnlessCancelledOrValid_ShownOnce( INITIAL_NAME, INITIAL_NAME, "global" );
+  }
+
+  @Test
+  public void showDbDialog_ReturnsNull_OnCancel_LocalDb() throws Exception {
+    // null as input emulates cancelling
+    test_showDbDialogUnlessCancelledOrValid_ShownOnce( null, null, "local" );
+  }
+
+  @Test
+  public void showDbDialog_ReturnsInputName_WhenItIsUnique_LocalDb() throws Exception {
+    test_showDbDialogUnlessCancelledOrValid_ShownOnce( INPUT_NAME, INPUT_NAME, "local" );
+  }
+
+  @Test
+  public void showDbDialog_ReturnsInputName_WhenItIsUnique_WithSpaces_LocalDb() throws Exception {
+    String input = " " + INPUT_NAME + " ";
+    test_showDbDialogUnlessCancelledOrValid_ShownOnce( input, INPUT_NAME, "local" );
+  }
+
+  @Test
+  public void showDbDialog_ReturnsExistingName_WhenNameWasNotChanged_LocalDb() throws Exception {
+    // this is the case of editing when name was not changed (e.g., host was updated)
+    test_showDbDialogUnlessCancelledOrValid_ShownOnce( INITIAL_NAME, INITIAL_NAME, "local" );
   }
 
   private void test_showDbDialogUnlessCancelledOrValid_ShownOnce( String inputName,
-                                                                  String expectedResult ) throws Exception {
+                                                                  String expectedResult, String level )
+    throws Exception {
+    JobMeta jobMeta = new JobMeta();
+    DatabaseManagementInterface testDbMgr = null;
+    if ( level.equals( "global" ) ) {
+      testDbMgr = dbMgr;
+    } else if ( level.equals( "local" ) ) {
+      testDbMgr = jobMeta.getDatabaseManagementInterface();
+    }
+
     DatabaseDialog databaseDialog = mock( DatabaseDialog.class );
     when( databaseDialog.open() ).thenReturn( inputName );
     when( databaseDialog.getDatabaseMeta() ).thenReturn( createDefaultDatabase() );
 
-    JobMeta jobMeta = new JobMeta();
     DatabaseMeta db = createDefaultDatabase();
-    dbMgr.addDatabase( db );
+    testDbMgr.addDatabase( db );
 
     mockDialog.databaseDialog = databaseDialog;
     mockDialog.jobMeta = jobMeta;
     when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta(), anyDbMgr() ) ).thenCallRealMethod();
 
-    String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) db.clone(), db, dbMgr );
+    String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) db.clone(), db, testDbMgr );
     assertEquals( expectedResult, result );
 
     // database dialog should be shown only once
@@ -335,20 +370,69 @@ public class JobEntryDialog_ConnectionLine_Test {
   }
 
   @Test
-  public void showDbDialog_LoopsUntilUniqueValueIsInput() throws Exception {
-    DatabaseMeta db1 = createDefaultDatabase();
+  public void showDbDialog_LoopsUntilUniqueValueIsInput_LocalDbs() throws Exception {
+    showDbDialog_LoopsUntilUniqueValueIsInput( "local" );
+  }
 
-    DatabaseMeta db2 = createDefaultDatabase();
-    db2.setName( INPUT_NAME );
+  @Test
+  public void showDbDialog_LoopsUntilUniqueValueIsInput_GlobalDbs() throws Exception {
+    showDbDialog_LoopsUntilUniqueValueIsInput( "global" );
+  }
+
+  @Test
+  public void doNotShowDbExistsErrorDialogForDbsWithSharedNamesAtDifferentLevels() throws Exception {
+    DatabaseMeta globalDb = createDefaultDatabase();
+
+    DatabaseMeta localDb = createDefaultDatabase();
+    localDb.setName( INPUT_NAME );
 
     JobMeta jobMeta = new JobMeta();
-    dbMgr.addDatabase( db1 );
-    dbMgr.addDatabase( db2 );
+    dbMgr.addDatabase( globalDb );
+    jobMeta.addDatabase( localDb );
+    assertNumberOfGlobalDBs( 1 );
+    assertNumberOfLocalDBs( jobMeta, 1 );
+
+    DatabaseDialog databaseDialog = mock( DatabaseDialog.class );
+    when( databaseDialog.open() ).thenReturn( INPUT_NAME );
+
+    mockDialog.databaseDialog = databaseDialog;
+    mockDialog.jobMeta = jobMeta;
+    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta(), anyDbMgr() ) ).thenCallRealMethod();
+
+    // renaming global to have same name as local
+    String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) globalDb.clone(), globalDb, dbMgr );
+    assertEquals( result, INPUT_NAME );
+
+    verify( mockDialog, times( 0 ) ).showDbExistsDialog( anyDbMeta() );
+  }
+
+  private void showDbDialog_LoopsUntilUniqueValueIsInput( String level ) throws Exception {
+    DatabaseMeta db1 = createDefaultDatabase();
+
+    DatabaseMeta db2 = new DatabaseMeta();
+    db2.setName( INPUT_NAME );
+    db2.setHostname( INITIAL_HOST );
+
+    JobMeta jobMeta = new JobMeta();
+    DatabaseManagementInterface testDbMgr = null;
+    if ( level.equals( "global" ) ) {
+      testDbMgr = dbMgr;
+    } else if ( level.equals( "local" ) ) {
+      testDbMgr = jobMeta.getDatabaseManagementInterface();
+    }
+    testDbMgr.addDatabase( db1 );
+    testDbMgr.addDatabase( db2 );
 
     final String expectedResult = INPUT_NAME + "2";
 
     DatabaseDialog databaseDialog = mock( DatabaseDialog.class );
     when( databaseDialog.open() )
+      //TODO wait, this is a regression. in 10.1 you could rename a connection to have the same name with differing case
+
+      // original, differing by case
+      .thenReturn( INITIAL_NAME.toUpperCase() )
+      // original with spaces
+      .thenReturn( INITIAL_NAME + " " )
       // duplicate
       .thenReturn( INPUT_NAME )
       // duplicate with spaces
@@ -362,13 +446,12 @@ public class JobEntryDialog_ConnectionLine_Test {
     mockDialog.jobMeta = jobMeta;
     when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta(), anyDbMgr() ) ).thenCallRealMethod();
 
-    // try to rename db1 ("qwerty")
-    String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) db1.clone(), db1, dbMgr );
+    // try to rename db1 (named "qwerty")
+    String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) db1.clone(), db1, testDbMgr );
     assertEquals( expectedResult, result );
 
-    // database dialog should be shown four times
-    verify( databaseDialog, times( 4 ) ).open();
-    // and the error message should be shown three times
-    verify( mockDialog, times( 3 ) ).showDbExistsDialog( anyDbMeta() );
+    // error message should be shown once for each incorrect input
+    verify( mockDialog, times( 5 ) ).showDbExistsDialog( anyDbMeta() );
+    verify( databaseDialog, times( 6 ) ).open();
   }
 }

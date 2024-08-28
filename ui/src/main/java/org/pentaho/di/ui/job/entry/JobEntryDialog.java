@@ -58,7 +58,9 @@ import org.pentaho.di.ui.util.DialogUtils;
 import org.pentaho.metastore.api.IMetaStore;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * The JobEntryDialog class is responsible for constructing and opening the settings dialog for the job entry. Whenever
@@ -303,9 +305,20 @@ public class JobEntryDialog extends Dialog {
       } else {
         name = name.trim();
         DatabaseMeta same = null;
+        // don't look for collisions unless they changed the name
         if ( !name.equals( origname ) ) {
-          // don't look for collisions unless they changed the name
-          same = jobMeta.findDatabase( name );
+          try {
+            String finalName = name;
+            List<DatabaseMeta> matches =
+              dbMgr.getDatabases().stream().filter( db -> db.getName().trim().equalsIgnoreCase( finalName ) ).collect( Collectors.toList() );
+            if ( !matches.isEmpty() ) {
+              same = matches.get( 0 );
+            }
+          } catch ( KettleException e ) {
+            new ErrorDialog( shell,
+              BaseMessages.getString( PKG, "BaseStepDialog.UnexpectedErrorEditingConnection.DialogTitle" ),
+              BaseMessages.getString( PKG, "BaseStepDialog.UnexpectedErrorEditingConnection.DialogMessage" ), e );
+          }
         }
         if ( same == null || same == origin ) {
           // OK was pressed and input is valid. Name for new or edited connection is unique.

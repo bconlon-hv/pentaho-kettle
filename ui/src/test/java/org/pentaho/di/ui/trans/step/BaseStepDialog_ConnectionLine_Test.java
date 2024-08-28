@@ -266,6 +266,8 @@ public class BaseStepDialog_ConnectionLine_Test {
     return any( DatabaseMeta.class );
   }
 
+  //TODO add the new tests from job entry equivalent
+
   private static DatabaseManagementInterface anyDbMgr() {
     return any( DatabaseManagementInterface.class );
   }
