@@ -148,7 +148,7 @@ public class JobEntryDialog_ConnectionLine_Test {
   }
 
   private void invokeAddConnectionListener( JobMeta jobMeta, String answeredName ) throws Exception {
-    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), any() ) )
+    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), any(), anyDbMgr() ) )
       .thenAnswer( new PropsSettingAnswer( answeredName, INPUT_HOST ) );
 
     mockDialog.jobMeta = jobMeta;
@@ -236,7 +236,7 @@ public class JobEntryDialog_ConnectionLine_Test {
   }
 
   private void invokeEditConnectionListener( JobMeta jobMeta, String answeredName ) throws Exception {
-    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta() ) )
+    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta(), anyDbMgr() ) )
       .thenAnswer( new PropsSettingAnswer( answeredName, INPUT_HOST ) );
 
     CCombo combo = mock( CCombo.class );
@@ -261,6 +261,10 @@ public class JobEntryDialog_ConnectionLine_Test {
 
   private static DatabaseMeta anyDbMeta() {
     return any( DatabaseMeta.class );
+  }
+
+  private static DatabaseManagementInterface anyDbMgr() {
+    return any( DatabaseManagementInterface.class );
   }
 
   private static class PropsSettingAnswer implements Answer<String> {
@@ -321,9 +325,9 @@ public class JobEntryDialog_ConnectionLine_Test {
 
     mockDialog.databaseDialog = databaseDialog;
     mockDialog.jobMeta = jobMeta;
-    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta() ) ).thenCallRealMethod();
+    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta(), anyDbMgr() ) ).thenCallRealMethod();
 
-    String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) db.clone(), db );
+    String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) db.clone(), db, dbMgr );
     assertEquals( expectedResult, result );
 
     // database dialog should be shown only once
@@ -356,10 +360,10 @@ public class JobEntryDialog_ConnectionLine_Test {
 
     mockDialog.databaseDialog = databaseDialog;
     mockDialog.jobMeta = jobMeta;
-    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta() ) ).thenCallRealMethod();
+    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta(), anyDbMgr() ) ).thenCallRealMethod();
 
     // try to rename db1 ("qwerty")
-    String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) db1.clone(), db1 );
+    String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) db1.clone(), db1, dbMgr );
     assertEquals( expectedResult, result );
 
     // database dialog should be shown four times

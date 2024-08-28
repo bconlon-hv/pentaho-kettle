@@ -1560,7 +1560,6 @@ public class BaseStepDialog extends Dialog {
       DatabaseMeta databaseMeta = transMeta.findDatabase( wConnection.getText() );
       String originalName = databaseMeta.getName();
       DatabaseManagementInterface applicableDbMgr = null;
-
       if ( databaseMeta != null ) {
         try {
           DatabaseManagementInterface dbMgr =
