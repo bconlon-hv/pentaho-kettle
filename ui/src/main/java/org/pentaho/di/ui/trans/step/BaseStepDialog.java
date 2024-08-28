@@ -818,7 +818,8 @@ public class BaseStepDialog extends Dialog {
   }
 
   @VisibleForTesting
-  public String showDbDialogUnlessCancelledOrValid( DatabaseMeta changing, DatabaseMeta origin ) {
+  public String showDbDialogUnlessCancelledOrValid( DatabaseMeta changing, DatabaseMeta origin,
+                                                    DatabaseManagementInterface dbMgr ) {
     changing.shareVariablesWith( transMeta );
     DatabaseDialog cid = getDatabaseDialog( shell );
     cid.setDatabaseMeta( changing );
@@ -844,21 +845,11 @@ public class BaseStepDialog extends Dialog {
           same = transMeta.findDatabase( name );
         }
         if ( same == null || same == origin ) {
-          // TODO how would same==origin ever happen?
-
           // OK was pressed and input is valid. Name for new or edited connection is unique.
           repeat = false;
         } else {
           try {
-            DatabaseManagementInterface dbMgr =
-              spoonSupplier.get().getBowl().getManager( DatabaseManagementInterface.class );
             if ( dbMgr.getDatabase( changing.getName() ) != null ) {
-              //TODO i suppose this could break if you get teh dbMgr for the project but are editing a connection in // global/local?
-              // or if you're editing a a local one to have the same name as another local one? (because we're never // checking local for collisions)
-
-              // TODO I coudl pass in the maanger as suggested, but how do I know which one to pass?  I don't know //  the new name for the connection until after the user has entered it in the dialog as part of this method...
-
-              // or do I pass all 3 mgrs?
               showDbExistsDialog( changing );
             } else {
               repeat = false;
@@ -1535,19 +1526,19 @@ public class BaseStepDialog extends Dialog {
     @Override
     public void widgetSelected( SelectionEvent e ) {
       DatabaseMeta databaseMeta = new DatabaseMeta();
-      String connectionName = showDbDialogUnlessCancelledOrValid( databaseMeta, null );
-      if ( connectionName != null ) {
-        try {
-          DatabaseManagementInterface dbMgr =
-            spoonSupplier.get().getBowl().getManager( DatabaseManagementInterface.class );
+      try {
+        DatabaseManagementInterface dbMgr =
+          spoonSupplier.get().getBowl().getManager( DatabaseManagementInterface.class );
+        String connectionName = showDbDialogUnlessCancelledOrValid( databaseMeta, null, dbMgr );
+        if ( connectionName != null ) {
           dbMgr.addDatabase( databaseMeta );
-        } catch ( KettleException ex ) {
-          new ErrorDialog( wConnection.getShell(),
-            BaseMessages.getString( PKG, "BaseStepDialog.UnexpectedErrorEditingConnection.DialogTitle" ),
-            BaseMessages.getString( PKG, "BaseStepDialog.UnexpectedErrorEditingConnection.DialogMessage" ), ex );
+          reinitConnectionDropDown( wConnection, databaseMeta.getName() );
+          spoonSupplier.get().refreshTree( DBConnectionFolderProvider.STRING_CONNECTIONS );
         }
-        reinitConnectionDropDown( wConnection, databaseMeta.getName() );
-        spoonSupplier.get().refreshTree( DBConnectionFolderProvider.STRING_CONNECTIONS );
+      } catch ( KettleException ex ) {
+        new ErrorDialog( wConnection.getShell(),
+          BaseMessages.getString( PKG, "BaseStepDialog.UnexpectedErrorEditingConnection.DialogTitle" ),
+          BaseMessages.getString( PKG, "BaseStepDialog.UnexpectedErrorEditingConnection.DialogMessage" ), ex );
       }
     }
   }
@@ -1568,40 +1559,34 @@ public class BaseStepDialog extends Dialog {
     public void widgetSelected( SelectionEvent e ) {
       DatabaseMeta databaseMeta = transMeta.findDatabase( wConnection.getText() );
       String originalName = databaseMeta.getName();
-      DatabaseManagementInterface theRightOneToUse = null;
-
-      //TODO need to determine here the level of the db connection being edited.
+      DatabaseManagementInterface applicableDbMgr = null;
 
       if ( databaseMeta != null ) {
         try {
-
           DatabaseManagementInterface dbMgr =
             spoonSupplier.get().getBowl().getManager( DatabaseManagementInterface.class );
           DatabaseManagementInterface globalDbMgr =
             DefaultBowl.getInstance().getManager( DatabaseManagementInterface.class );
           DatabaseManagementInterface transDbMgr = transMeta.getDatabaseManagementInterface();
 
-          if ( theRightOneToUse == null && dbMgr.getDatabase( originalName ) != null ) {
-            theRightOneToUse = dbMgr;
-          } else if ( theRightOneToUse == null && globalDbMgr.getDatabase( originalName ) != null ) {
-            theRightOneToUse = globalDbMgr;
-          } else if ( theRightOneToUse == null && Arrays.stream( transMeta.getDatabaseNames() ).anyMatch( originalName::equals ) ) {
-            theRightOneToUse = transDbMgr;
+          if ( applicableDbMgr == null && dbMgr.getDatabase( originalName ) != null ) {
+            applicableDbMgr = dbMgr;
+          } else if ( applicableDbMgr == null && globalDbMgr.getDatabase( originalName ) != null ) {
+            applicableDbMgr = globalDbMgr;
+          } else if ( applicableDbMgr == null && Arrays.stream( transMeta.getDatabaseNames() )
+            .anyMatch( originalName::equals ) ) {
+            applicableDbMgr = transDbMgr;
           }
 
           // cloning to avoid spoiling data on cancel or incorrect input
           DatabaseMeta clone = (DatabaseMeta) databaseMeta.clone();
           // setting old Id, so a repository (if it used) could find and replace the existing connection
           clone.setObjectId( databaseMeta.getObjectId() );
-          String editedConnectionName = showDbDialogUnlessCancelledOrValid( clone, databaseMeta, theRightOneToUse );
-          //TODO note ^ name collision check has already happened. from here on, the new name is assumed to be ok.
+          String editedConnectionName = showDbDialogUnlessCancelledOrValid( clone, databaseMeta, applicableDbMgr );
+          // name collision check has already happened. from here on, the new name is assumed to be ok.
           if ( editedConnectionName != null ) {
-
-
-              theRightOneToUse.removeDatabase( databaseMeta );
-              theRightOneToUse.addDatabase( clone );
-
-
+            applicableDbMgr.removeDatabase( databaseMeta );
+            applicableDbMgr.addDatabase( clone );
             reinitConnectionDropDown( wConnection, editedConnectionName );
             spoonSupplier.get().refreshTree( DBConnectionFolderProvider.STRING_CONNECTIONS );
           }
