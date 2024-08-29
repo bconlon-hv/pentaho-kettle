@@ -33,7 +33,6 @@ import org.pentaho.di.shared.MemorySharedObjectsIO;
 import org.pentaho.di.ui.core.database.dialog.DatabaseDialog;
 import org.pentaho.di.ui.spoon.Spoon;
 
-import java.util.List;
 import java.util.function.Supplier;
 
 import org.eclipse.swt.custom.CCombo;
@@ -407,29 +406,45 @@ public class JobEntryDialog_ConnectionLine_Test {
   }
 
   @Test
-  public void doNotShowDbExistsErrorDialogWhenRenamingConnectionWithDifferentCaseOrSpaces() throws Exception {
-    //TODO need local and global versions of this
-    DatabaseMeta globalDb = createDefaultDatabase();
+  public void shouldNotShowDbExistsErrorDialogWhenRenamingLocalConnectionWithDifferentCase() throws Exception {
+    test_shouldNotShowDbExistsErrorDialogWhenRenaming( "local", INITIAL_NAME.toUpperCase() );
+  }
 
-    DatabaseMeta localDb = createDefaultDatabase();
-    localDb.setName( INPUT_NAME );
+  @Test
+  public void shouldNotShowDbExistsErrorDialogWhenRenamingGlobalConnectionWithDifferentCase() throws Exception {
+    test_shouldNotShowDbExistsErrorDialogWhenRenaming( "global", INITIAL_NAME.toUpperCase() );
+  }
+
+  @Test
+  public void shouldNotShowDbExistsErrorDialogWhenRenamingLocalConnectionWithSpaces() throws Exception {
+    test_shouldNotShowDbExistsErrorDialogWhenRenaming( "local", INITIAL_NAME + " " );
+  }
+
+  @Test
+  public void shouldNotShowDbExistsErrorDialogWhenRenamingGlobalConnectionWithSpaces() throws Exception {
+    test_shouldNotShowDbExistsErrorDialogWhenRenaming( "global", INITIAL_NAME + " " );
+  }
+
+  private void test_shouldNotShowDbExistsErrorDialogWhenRenaming( String level, String newName ) throws Exception {
+    DatabaseMeta db = createDefaultDatabase();
 
     JobMeta jobMeta = new JobMeta();
-    dbMgr.addDatabase( globalDb );
-    jobMeta.addDatabase( localDb );
-    assertNumberOfGlobalDBs( 1 );
-    assertNumberOfLocalDBs( jobMeta, 1 );
+    DatabaseManagementInterface testDbMgr = null;
+    if ( level.equals( "global" ) ) {
+      testDbMgr = dbMgr;
+    } else if ( level.equals( "local" ) ) {
+      testDbMgr = jobMeta.getDatabaseManagementInterface();
+    }
 
     DatabaseDialog databaseDialog = mock( DatabaseDialog.class );
-    when( databaseDialog.open() ).thenReturn( INPUT_NAME );
+    when( databaseDialog.open() ).thenReturn( newName );
 
     mockDialog.databaseDialog = databaseDialog;
     mockDialog.jobMeta = jobMeta;
     when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta(), anyDbMgr() ) ).thenCallRealMethod();
 
-    // renaming global to have same name as local
-    String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) globalDb.clone(), globalDb, dbMgr );
-    assertEquals( result, INPUT_NAME );
+    String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) db.clone(), db, testDbMgr );
+    assertEquals( result, newName.trim() );
 
     verify( mockDialog, times( 0 ) ).showDbExistsDialog( anyDbMeta() );
   }
