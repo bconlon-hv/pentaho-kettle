@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.eclipse.jface.wizard.IWizard;
 import org.eclipse.jface.wizard.IWizardPage;
@@ -242,7 +243,7 @@ public class CreateDatabaseWizardPage1 extends WizardPage {
       try {
         DatabaseManagementInterface dbMgr =
           Spoon.getInstance().getBowl().getManager( DatabaseManagementInterface.class );
-        if ( dbMgr.getDatabase( name ) != null ) {
+        if ( dbMgr.getDatabases().stream().anyMatch( db -> db.getName().trim().equalsIgnoreCase( name ) ) ) {
           setErrorMessage( BaseMessages.getString( PKG, "CreateDatabaseWizardPage1.ErrorMessage.DBNameExists",
             name.trim() ) );
           return false;

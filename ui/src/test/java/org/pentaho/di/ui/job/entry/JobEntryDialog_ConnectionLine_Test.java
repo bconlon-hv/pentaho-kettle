@@ -406,6 +406,34 @@ public class JobEntryDialog_ConnectionLine_Test {
     verify( mockDialog, times( 0 ) ).showDbExistsDialog( anyDbMeta() );
   }
 
+  @Test
+  public void doNotShowDbExistsErrorDialogWhenRenamingConnectionWithDifferentCaseOrSpaces() throws Exception {
+    //TODO need local and global versions of this
+    DatabaseMeta globalDb = createDefaultDatabase();
+
+    DatabaseMeta localDb = createDefaultDatabase();
+    localDb.setName( INPUT_NAME );
+
+    JobMeta jobMeta = new JobMeta();
+    dbMgr.addDatabase( globalDb );
+    jobMeta.addDatabase( localDb );
+    assertNumberOfGlobalDBs( 1 );
+    assertNumberOfLocalDBs( jobMeta, 1 );
+
+    DatabaseDialog databaseDialog = mock( DatabaseDialog.class );
+    when( databaseDialog.open() ).thenReturn( INPUT_NAME );
+
+    mockDialog.databaseDialog = databaseDialog;
+    mockDialog.jobMeta = jobMeta;
+    when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta(), anyDbMgr() ) ).thenCallRealMethod();
+
+    // renaming global to have same name as local
+    String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) globalDb.clone(), globalDb, dbMgr );
+    assertEquals( result, INPUT_NAME );
+
+    verify( mockDialog, times( 0 ) ).showDbExistsDialog( anyDbMeta() );
+  }
+
   private void showDbDialog_LoopsUntilUniqueValueIsInput( String level ) throws Exception {
     DatabaseMeta db1 = createDefaultDatabase();
 
@@ -427,13 +455,7 @@ public class JobEntryDialog_ConnectionLine_Test {
 
     DatabaseDialog databaseDialog = mock( DatabaseDialog.class );
     when( databaseDialog.open() )
-      //TODO wait, this is a regression. in 10.1 you could rename a connection to have the same name with differing case
-
-      // original, differing by case
-      .thenReturn( INITIAL_NAME.toUpperCase() )
-      // original with spaces
-      .thenReturn( INITIAL_NAME + " " )
-      // duplicate
+       // duplicate
       .thenReturn( INPUT_NAME )
       // duplicate with spaces
       .thenReturn( INPUT_NAME + " " )
@@ -451,7 +473,7 @@ public class JobEntryDialog_ConnectionLine_Test {
     assertEquals( expectedResult, result );
 
     // error message should be shown once for each incorrect input
-    verify( mockDialog, times( 5 ) ).showDbExistsDialog( anyDbMeta() );
-    verify( databaseDialog, times( 6 ) ).open();
+    verify( mockDialog, times( 3 ) ).showDbExistsDialog( anyDbMeta() );
+    verify( databaseDialog, times( 4 ) ).open();
   }
 }
