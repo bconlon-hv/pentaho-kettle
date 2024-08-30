@@ -296,22 +296,22 @@ public class JobEntryDialog_ConnectionLine_Test {
   }
 
   @Test
-  public void edit_shouldNotShowDbExistsErrorDialogWhenRenamingLocalConnectionWithDifferentCase() {
+  public void edit_shouldNotShowDbExistsErrorDialogWhenRenamingLocalConnectionWithDifferentCase() throws Exception {
     edit_shouldNotShowDbExistsErrorDialogWhenRenaming( "local", INITIAL_NAME.toUpperCase() );
   }
 
   @Test
-  public void edit_shouldNotShowDbExistsErrorDialogWhenRenamingGlobalConnectionWithDifferentCase() {
+  public void edit_shouldNotShowDbExistsErrorDialogWhenRenamingGlobalConnectionWithDifferentCase() throws Exception {
     edit_shouldNotShowDbExistsErrorDialogWhenRenaming( "global", INITIAL_NAME.toUpperCase() );
   }
 
   @Test
-  public void edit_shouldNotShowDbExistsErrorDialogWhenRenamingLocalConnectionWithSpaces() {
+  public void edit_shouldNotShowDbExistsErrorDialogWhenRenamingLocalConnectionWithSpaces() throws Exception {
     edit_shouldNotShowDbExistsErrorDialogWhenRenaming( "local", INITIAL_NAME + " " );
   }
 
   @Test
-  public void edit_shouldNotShowDbExistsErrorDialogWhenRenamingGlobalConnectionWithSpaces() {
+  public void edit_shouldNotShowDbExistsErrorDialogWhenRenamingGlobalConnectionWithSpaces() throws Exception {
     edit_shouldNotShowDbExistsErrorDialogWhenRenaming( "global", INITIAL_NAME + " " );
   }
 
@@ -321,10 +321,14 @@ public class JobEntryDialog_ConnectionLine_Test {
     DatabaseMeta db2 = new DatabaseMeta();
     db2.setName( INPUT_NAME );
     db2.setHostname( INITIAL_HOST );
+    DatabaseMeta db3 = new DatabaseMeta();
+    db3.setName( "QwErTy" );
+    db3.setHostname( INITIAL_HOST );
 
     JobMeta jobMeta = new JobMeta();
     dbMgr.addDatabase( db1 );
     dbMgr.addDatabase( db2 );
+    dbMgr.addDatabase( db3 );
 
     final String expectedResult = INITIAL_NAME + "2";
 
@@ -351,7 +355,8 @@ public class JobEntryDialog_ConnectionLine_Test {
     verify( databaseDialog, times( 6 ) ).open();
   }
 
-  private void edit_shouldNotShowDbExistsErrorDialogWhenRenaming( String level, String newName ) {
+  private void edit_shouldNotShowDbExistsErrorDialogWhenRenaming( String level, String newName )
+    throws Exception {
     DatabaseMeta db = createDefaultDatabase();
 
     JobMeta jobMeta = new JobMeta();
@@ -361,6 +366,7 @@ public class JobEntryDialog_ConnectionLine_Test {
     } else if ( level.equals( "local" ) ) {
       testDbMgr = jobMeta.getDatabaseManagementInterface();
     }
+    testDbMgr.addDatabase( db );
 
     DatabaseDialog databaseDialog = mock( DatabaseDialog.class );
     when( databaseDialog.open() ).thenReturn( newName );
@@ -401,6 +407,8 @@ public class JobEntryDialog_ConnectionLine_Test {
       .thenReturn( INPUT_NAME + " " )
       // duplicate in other case
       .thenReturn( INPUT_NAME.toUpperCase() )
+      // duplicate with other case and spaces
+      .thenReturn( INPUT_NAME.toUpperCase() + " " )
       // unique value
       .thenReturn( expectedResult );
 
@@ -413,8 +421,8 @@ public class JobEntryDialog_ConnectionLine_Test {
     assertEquals( expectedResult, result );
 
     // error message should be shown once for each incorrect input
-    verify( mockDialog, times( 3 ) ).showDbExistsDialog( anyDbMeta() );
-    verify( databaseDialog, times( 4 ) ).open();
+    verify( mockDialog, times( 4 ) ).showDbExistsDialog( anyDbMeta() );
+    verify( databaseDialog, times( 5 ) ).open();
   }
 
   private void edit_showDbDialogUnlessCancelledOrValid_ShownOnce( String inputName,

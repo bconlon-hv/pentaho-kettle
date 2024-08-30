@@ -304,37 +304,24 @@ public class JobEntryDialog extends Dialog {
         repeat = false;
       } else {
         name = name.trim();
-        DatabaseMeta same = null;
+        boolean collisionFound = false;
         // don't look for collisions unless they changed the name
         if ( !name.equalsIgnoreCase( origname ) ) {
           try {
             String finalName = name;
-            List<DatabaseMeta> matches =
-              dbMgr.getDatabases().stream().filter( db -> db.getName().trim().equalsIgnoreCase( finalName ) ).collect( Collectors.toList() );
-            if ( !matches.isEmpty() ) {
-              same = matches.get( 0 );
-            }
+            collisionFound =
+              dbMgr.getDatabases().stream().anyMatch( db -> db.getName().trim().equalsIgnoreCase( finalName ) );
           } catch ( KettleException e ) {
             new ErrorDialog( shell,
               BaseMessages.getString( PKG, "BaseStepDialog.UnexpectedErrorEditingConnection.DialogTitle" ),
               BaseMessages.getString( PKG, "BaseStepDialog.UnexpectedErrorEditingConnection.DialogMessage" ), e );
           }
         }
-        if ( same == null || same == origin ) {
+        if ( !collisionFound ) {
           // OK was pressed and input is valid. Name for new or edited connection is unique.
           repeat = false;
         } else {
-          try {
-            if ( dbMgr.getDatabase( changing.getName() ) != null ) {
-              showDbExistsDialog( changing );
-            } else {
-              repeat = false;
-            }
-          } catch ( KettleException e ) {
-            new ErrorDialog( shell,
-              BaseMessages.getString( PKG, "BaseStepDialog.UnexpectedErrorEditingConnection.DialogTitle" ),
-              BaseMessages.getString( PKG, "BaseStepDialog.UnexpectedErrorEditingConnection.DialogMessage" ), e );
-          }
+          showDbExistsDialog( changing );
         }
       }
     }
