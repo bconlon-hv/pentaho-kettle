@@ -293,7 +293,7 @@ public class JobEntryDialog extends Dialog {
     DatabaseDialog cid = getDatabaseDialog();
     cid.setDatabaseMeta( changing );
     cid.setModalDialog( true );
-    String origname = origin == null ? null : origin.getName().trim();
+    String origname = origin == null ? null : origin.getName();
 
     String name = null;
     boolean repeat = true;
@@ -307,7 +307,7 @@ public class JobEntryDialog extends Dialog {
         DatabaseMeta same = null;
         // don't look for collisions unless they changed the name
 
-        //TODO should this also be .trim().equalsIgnoreCase...?
+        //TODO should this also be .trim().equalsIgnoreCase...? or origname.trim?
         if ( !name.equalsIgnoreCase( origname ) ) {
           try {
             String finalName = name;
