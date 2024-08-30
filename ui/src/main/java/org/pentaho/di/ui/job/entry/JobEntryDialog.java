@@ -425,7 +425,7 @@ public class JobEntryDialog extends Dialog {
             spoonSupplier.get().getBowl().getManager( DatabaseManagementInterface.class );
           DatabaseManagementInterface globalDbMgr =
             DefaultBowl.getInstance().getManager( DatabaseManagementInterface.class );
-          DatabaseManagementInterface transDbMgr = jobMeta.getDatabaseManagementInterface();
+          DatabaseManagementInterface jobDbMgr = jobMeta.getDatabaseManagementInterface();
 
           if ( applicableDbMgr == null && dbMgr.getDatabase( originalName ) != null ) {
             applicableDbMgr = dbMgr;
@@ -433,7 +433,7 @@ public class JobEntryDialog extends Dialog {
             applicableDbMgr = globalDbMgr;
           } else if ( applicableDbMgr == null && Arrays.stream( jobMeta.getDatabaseNames() )
             .anyMatch( originalName::equals ) ) {
-            applicableDbMgr = transDbMgr;
+            applicableDbMgr = jobDbMgr;
           }
 
           // cloning to avoid spoiling data on cancel or incorrect input
