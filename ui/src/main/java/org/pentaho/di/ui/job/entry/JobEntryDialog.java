@@ -306,8 +306,6 @@ public class JobEntryDialog extends Dialog {
         name = name.trim();
         DatabaseMeta same = null;
         // don't look for collisions unless they changed the name
-
-        //TODO should this also be .trim().equalsIgnoreCase...? or origname.trim?
         if ( !name.equalsIgnoreCase( origname ) ) {
           try {
             String finalName = name;
