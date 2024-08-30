@@ -822,7 +822,7 @@ public class BaseStepDialog extends Dialog {
   public String showDbDialogUnlessCancelledOrValid( DatabaseMeta changing, DatabaseMeta origin,
                                                     DatabaseManagementInterface dbMgr ) {
     changing.shareVariablesWith( transMeta );
-    DatabaseDialog cid = getDatabaseDialog( shell );
+    DatabaseDialog cid = getDatabaseDialog();
     cid.setDatabaseMeta( changing );
     cid.setModalDialog( true );
     String origname = origin == null ? null : origin.getName();
@@ -873,6 +873,18 @@ public class BaseStepDialog extends Dialog {
     dropDown.removeAll();
     addDatabases( dropDown );
     selectDatabase( dropDown, selected );
+  }
+
+  /**
+   * Gets the database dialog.
+   *
+   * @return the database dialog
+   */
+  private DatabaseDialog getDatabaseDialog() {
+    if ( databaseDialog != null ) {
+      return databaseDialog;
+    }
+    return getDatabaseDialog( shell );
   }
 
   /**
