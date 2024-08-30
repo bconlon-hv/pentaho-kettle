@@ -369,7 +369,11 @@ public class JobEntryDialog_ConnectionLine_Test {
     testDbMgr.addDatabase( db );
 
     DatabaseDialog databaseDialog = mock( DatabaseDialog.class );
-    when( databaseDialog.open() ).thenReturn( newName );
+    when( databaseDialog.open() )
+      .thenReturn( newName )
+      // The following thenReturn allows the test to fail gracefully, rather than getting stuck indefinitely because
+      // the error dialog appeared when it wasn't expected
+      .thenReturn( "shouldNotBeReachable" );
 
     mockDialog.databaseDialog = databaseDialog;
     mockDialog.jobMeta = jobMeta;
