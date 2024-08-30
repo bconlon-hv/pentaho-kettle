@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.eclipse.jface.wizard.IWizard;
 import org.eclipse.jface.wizard.IWizardPage;
@@ -240,12 +239,13 @@ public class CreateDatabaseWizardPage1 extends WizardPage {
       return false;
     }
     if ( name != null && DatabaseMeta.findDatabase( databases, name ) != null ) {
+      String trimmedName = name.trim();
       try {
         DatabaseManagementInterface dbMgr =
           Spoon.getInstance().getBowl().getManager( DatabaseManagementInterface.class );
-        if ( dbMgr.getDatabases().stream().anyMatch( db -> db.getName().trim().equalsIgnoreCase( name.trim() ) ) ) {
+        if ( dbMgr.getDatabases().stream().anyMatch( db -> db.getName().trim().equalsIgnoreCase( trimmedName ) ) ) {
           setErrorMessage( BaseMessages.getString( PKG, "CreateDatabaseWizardPage1.ErrorMessage.DBNameExists",
-            name.trim() ) );
+            trimmedName ) );
           return false;
         } else {
           // new connection can reuse name of an existing connection, but only if they are at different levels
@@ -256,7 +256,7 @@ public class CreateDatabaseWizardPage1 extends WizardPage {
         }
       } catch ( KettleException e ) {
         setErrorMessage(
-          BaseMessages.getString( PKG, "CreateDatabaseWizardPage1.ErrorMessage.UnexpectedError", name.trim() ) );
+          BaseMessages.getString( PKG, "CreateDatabaseWizardPage1.ErrorMessage.UnexpectedError", trimmedName ) );
         return false;
       }
     } else {
