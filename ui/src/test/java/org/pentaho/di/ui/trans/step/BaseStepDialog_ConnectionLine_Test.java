@@ -22,6 +22,7 @@
 
 package org.pentaho.di.ui.trans.step;
 
+import org.eclipse.swt.widgets.Shell;
 import org.pentaho.di.core.bowl.DefaultBowl;
 import org.pentaho.di.core.KettleEnvironment;
 import org.pentaho.di.core.database.DatabaseMeta;
@@ -81,8 +82,10 @@ public class BaseStepDialog_ConnectionLine_Test {
     mockSupplier = mock( Supplier.class );
     mockSpoon = mock( Spoon.class );
     mockDialog = mock( BaseStepDialog.class );
+    Shell shell = new Shell();
 
     Whitebox.setInternalState( mockDialog, "spoonSupplier", mockSupplier );
+    Whitebox.setInternalState( mockDialog, "shell", shell );
     when( mockSupplier.get() ).thenReturn( mockSpoon );
     doReturn( DefaultBowl.getInstance() ).when( mockSpoon ).getBowl();
 
@@ -344,7 +347,9 @@ public class BaseStepDialog_ConnectionLine_Test {
 
     mockDialog.databaseDialog = databaseDialog;
     mockDialog.transMeta = transMeta;
+    when( mockDialog.getDatabaseDialog( anyShell() ) ).thenReturn( databaseDialog );
     when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), any(), anyDbMgr() ) ).thenCallRealMethod();
+    when( databaseDialog.getDatabaseMeta() ).thenReturn( (DatabaseMeta) db1.clone() );
 
     // try to rename db1 (named "qwerty")
     String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) db1.clone(), null, dbMgr );
@@ -377,7 +382,9 @@ public class BaseStepDialog_ConnectionLine_Test {
 
     mockDialog.databaseDialog = databaseDialog;
     mockDialog.transMeta = transMeta;
+    when( mockDialog.getDatabaseDialog( anyShell() ) ).thenReturn( databaseDialog );
     when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta(), anyDbMgr() ) ).thenCallRealMethod();
+    when( databaseDialog.getDatabaseMeta() ).thenReturn( (DatabaseMeta) db.clone() );
 
     String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) db.clone(), db, testDbMgr );
     assertEquals( result, newName.trim() );
@@ -415,10 +422,10 @@ public class BaseStepDialog_ConnectionLine_Test {
       .thenReturn( INPUT_NAME.toUpperCase() + " " )
       // unique value
       .thenReturn( expectedResult );
-
-    mockDialog.databaseDialog = databaseDialog;
     mockDialog.transMeta = transMeta;
     when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta(), anyDbMgr() ) ).thenCallRealMethod();
+    when( mockDialog.getDatabaseDialog( anyShell() ) ).thenReturn( databaseDialog );
+    when( databaseDialog.getDatabaseMeta() ).thenReturn( (DatabaseMeta) db1.clone() );
 
     // try to rename db1 (named "qwerty")
     String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) db1.clone(), db1, testDbMgr );
@@ -450,6 +457,8 @@ public class BaseStepDialog_ConnectionLine_Test {
     mockDialog.databaseDialog = databaseDialog;
     mockDialog.transMeta = transMeta;
     when( mockDialog.showDbDialogUnlessCancelledOrValid( anyDbMeta(), anyDbMeta(), anyDbMgr() ) ).thenCallRealMethod();
+    when( mockDialog.getDatabaseDialog( anyShell() ) ).thenReturn( databaseDialog );
+    when( databaseDialog.getDatabaseMeta() ).thenReturn( (DatabaseMeta) db.clone() );
 
     String result = mockDialog.showDbDialogUnlessCancelledOrValid( (DatabaseMeta) db.clone(), db, testDbMgr );
     assertEquals( expectedResult, result );
@@ -508,6 +517,10 @@ public class BaseStepDialog_ConnectionLine_Test {
 
   private static DatabaseMeta anyDbMeta() {
     return any( DatabaseMeta.class );
+  }
+
+  private static Shell anyShell() {
+    return any( Shell.class );
   }
 
   private static DatabaseManagementInterface anyDbMgr() {
