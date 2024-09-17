@@ -38,6 +38,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
 import org.pentaho.di.core.Const;
+import org.pentaho.di.core.bowl.Bowl;
 import org.pentaho.di.core.exception.KettleValueException;
 import org.pentaho.di.core.row.ValueMeta;
 import org.pentaho.di.core.row.ValueMetaInterface;
@@ -64,6 +65,8 @@ public class StringEvaluator {
   private boolean tryTrimming;
   private boolean autoScaling = true;
   private ValueMetaInterface stringMeta;
+
+  private Bowl bowl;
 
   private String[] dateFormats;
   private String[] numberFormats;
@@ -100,6 +103,11 @@ public class StringEvaluator {
     this( tryTrimming, DEFAULT_NUMBER_FORMATS, Const.getDateFormats() );
   }
 
+  public StringEvaluator( boolean tryTrimming, Bowl bowl ) {
+    this( tryTrimming, DEFAULT_NUMBER_FORMATS, Const.getDateFormats() );
+    this.bowl = bowl;
+  }
+
   public StringEvaluator( boolean tryTrimming, List<String> numberFormats, List<String> dateFormats ) {
     this( tryTrimming, numberFormats.toArray( new String[ numberFormats.size() ] ), dateFormats
       .toArray( new String[ dateFormats.size() ] ) );
@@ -114,7 +122,7 @@ public class StringEvaluator {
     this.autoScaling = autoScaling;
 
     Variables variables = new Variables();
-    variables.initializeVariablesFrom( null );
+    variables.initializeVariablesFrom( bowl.getADefaultVariableSpace() );
     preferredNumericFormatType = variables.getVariable( KETTLE_STRING_EVALUATOR_PREFERRED_LOCALE_PROPERTY );
     if ( !"EU".equals(preferredNumericFormatType) ) {
       preferredNumericFormatType = "US";

@@ -22,7 +22,6 @@
 
 package org.pentaho.di.ui.spoon.delegates;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -51,7 +50,6 @@ import org.pentaho.di.core.xml.XMLHandler;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.job.JobMeta;
 import org.pentaho.di.shared.DatabaseManagementInterface;
-import org.pentaho.di.trans.HasDatabasesInterface;
 import org.pentaho.di.trans.TransHopMeta;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.StepMeta;
@@ -185,8 +183,8 @@ public class SpoonDBDelegate extends SpoonDelegate {
   /**
    * Delete a database connection
    *
-   * @param name
-   *          The name of the database connection.
+   * @param dbMgr the DatabaseManagementInterface that owns the database connection being deleted
+   * @param db the database connection to delete
    */
   public void delConnection( DatabaseManagementInterface dbMgr, DatabaseMeta db ) {
     UndoInterface undoInterface = spoon.getActiveUndoInterface();

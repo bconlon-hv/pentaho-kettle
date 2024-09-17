@@ -1226,8 +1226,7 @@ public class Spoon extends ApplicationWindow implements AddUndoPositionInterface
     }
 
     EnterSearchDialog esd = new EnterSearchDialog( shell );
-    if ( !esd.open() ) {
-      return;
+    if ( !esd.open() ) {      return;
     }
 
     List<Object[]> rows = new ArrayList<>();

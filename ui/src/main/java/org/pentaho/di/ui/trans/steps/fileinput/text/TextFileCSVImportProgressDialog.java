@@ -332,7 +332,7 @@ public class TextFileCSVImportProgressDialog implements CsvInputAwareImportProgr
       for ( int i = 0; i < nrfields && i < r.length; i++ ) {
         StringEvaluator evaluator;
         if ( i >= evaluators.size() ) {
-          evaluator = new StringEvaluator( true );
+          evaluator = new StringEvaluator( true, transMeta.getBowl() );
           evaluators.add( evaluator );
         } else {
           evaluator = evaluators.get( i );
