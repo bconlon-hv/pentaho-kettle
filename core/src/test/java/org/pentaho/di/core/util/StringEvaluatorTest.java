@@ -30,6 +30,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.pentaho.di.core.bowl.DefaultBowl;
 
 /**
  * Test class for StringEvaluator functionality.
@@ -419,7 +420,7 @@ public class StringEvaluatorTest {
     String sampleFormat = "MM/dd/yyyy HH:mm:ss";
     ArrayList<String> dateFormats = new ArrayList<String>();
     dateFormats.add( sampleFormat );
-    StringEvaluator evaluator = new StringEvaluator( true, new ArrayList<String>(), dateFormats );
+    StringEvaluator evaluator = new StringEvaluator( true, new ArrayList<String>(), dateFormats, DefaultBowl.getInstance() );
     evaluator.evaluateString( "02/29/2000 00:00:00"  );
     assertFalse( evaluator.getStringEvaluationResults().isEmpty() );
     assertTrue( evaluator.getAdvicedResult().getConversionMeta().isDate() );
@@ -433,7 +434,7 @@ public class StringEvaluatorTest {
     ArrayList<String> dateFormats = new ArrayList<String>();
     dateFormats.add( sampleLongFormat );
     dateFormats.add( sampleShortFormat );
-    StringEvaluator evaluator = new StringEvaluator( true, new ArrayList<String>(), dateFormats );
+    StringEvaluator evaluator = new StringEvaluator( true, new ArrayList<String>(), dateFormats, DefaultBowl.getInstance() );
     evaluator.evaluateString( "02/29/20 00:00:00"  );
     assertFalse( evaluator.getStringEvaluationResults().isEmpty() );
     assertTrue( evaluator.getAdvicedResult().getConversionMeta().isDate() );

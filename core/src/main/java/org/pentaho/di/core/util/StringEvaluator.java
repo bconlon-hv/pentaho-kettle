@@ -39,6 +39,7 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang.StringUtils;
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.bowl.Bowl;
+import org.pentaho.di.core.bowl.DefaultBowl;
 import org.pentaho.di.core.exception.KettleValueException;
 import org.pentaho.di.core.row.ValueMeta;
 import org.pentaho.di.core.row.ValueMetaInterface;
@@ -100,24 +101,23 @@ public class StringEvaluator {
   }
 
   public StringEvaluator( boolean tryTrimming ) {
-    this( tryTrimming, DEFAULT_NUMBER_FORMATS, Const.getDateFormats() );
+    this( tryTrimming, DEFAULT_NUMBER_FORMATS, Const.getDateFormats(), DefaultBowl.getInstance() );
   }
 
   public StringEvaluator( boolean tryTrimming, Bowl bowl ) {
-    this( tryTrimming, DEFAULT_NUMBER_FORMATS, Const.getDateFormats() );
-    this.bowl = bowl;
+    this( tryTrimming, DEFAULT_NUMBER_FORMATS, Const.getDateFormats(), bowl );
   }
 
-  public StringEvaluator( boolean tryTrimming, List<String> numberFormats, List<String> dateFormats ) {
+  public StringEvaluator( boolean tryTrimming, List<String> numberFormats, List<String> dateFormats, Bowl bowl ) {
     this( tryTrimming, numberFormats.toArray( new String[ numberFormats.size() ] ), dateFormats
-      .toArray( new String[ dateFormats.size() ] ) );
+      .toArray( new String[ dateFormats.size() ] ), bowl );
   }
 
-  public StringEvaluator( boolean tryTrimming, String[] numberFormats, String[] dateFormats ) {
-    this( tryTrimming, numberFormats, dateFormats, true );
+  public StringEvaluator( boolean tryTrimming, String[] numberFormats, String[] dateFormats, Bowl bowl ) {
+    this( tryTrimming, numberFormats, dateFormats, bowl, true );
   }
 
-  public StringEvaluator( boolean tryTrimming, String[] numberFormats, String[] dateFormats, boolean autoScaling ) {
+  public StringEvaluator( boolean tryTrimming, String[] numberFormats, String[] dateFormats, Bowl bowl,  boolean autoScaling ) {
     this.tryTrimming = tryTrimming;
     this.autoScaling = autoScaling;
 
