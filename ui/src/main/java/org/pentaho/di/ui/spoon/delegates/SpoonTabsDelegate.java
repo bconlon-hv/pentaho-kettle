@@ -285,16 +285,6 @@ public class SpoonTabsDelegate extends SpoonDelegate {
         CTabFolder cTabFolder = tabfolder.getSwtTabset();
         final SpoonBrowser browser = new SpoonBrowser( cTabFolder, spoon, urlString, isURL, showControls, listener );
 
-        browser.getBrowser().addOpenWindowListener( new OpenWindowListener() {
-
-          @Override
-          public void open( WindowEvent event ) {
-            if ( event.required ) {
-              event.browser = browser.getBrowser();
-            }
-          }
-        } );
-
         Set<String> knownFunctions = new HashSet<>();
         addBrowserFunctions( functions, browser );
         knownFunctions.addAll( functions.keySet() );
@@ -318,14 +308,15 @@ public class SpoonTabsDelegate extends SpoonDelegate {
         };
         knownFunctions.add( "openURL" );
 
-        new BrowserFunction( browser.getBrowser(), "functionExists" ) {
+        browser.getBrowser().addOpenWindowListener( new OpenWindowListener() {
+
           @Override
-          public Boolean function( Object[] arguments ) {
-            boolean exists = knownFunctions.contains( arguments[0].toString() );
-            System.err.println( "knownFunction(" + arguments[0].toString() + "): " + exists );
-            return Boolean.valueOf( exists );
+          public void open( WindowEvent event ) {
+            if ( event.required ) {
+              event.browser = browser.getBrowser();
+            }
           }
-        };
+        } );
 
         PropsUI props = PropsUI.getInstance();
         TabItem tabItem = new TabItem( tabfolder, name, name, props.getSashWeights() );
